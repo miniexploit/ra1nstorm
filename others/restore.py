@@ -1,6 +1,7 @@
 import sys, os
 import subprocess
 import glob
+import time
 
 class Restore:
 	def __init__(self, identifier, ipsw):
@@ -96,9 +97,10 @@ class Restore:
 			log.write(f"{' '.join(args)}\n\n")
 			log.write("futurerestore log:\n")
 			log.write(fr.stdout)
+			time.sleep(1)
 			for line in fr.stdout.splitlines():
 				if "what=" in line:
 					error = line.replace("what=", "")
 			log.close()
 			sys.exit(f"[ERROR] Restore failed with reason: '{error}', log saved to 'restore_error.log'. Exiting.")
-		print("Successfully restored device! ")
+		print("Successfully restored device!")
