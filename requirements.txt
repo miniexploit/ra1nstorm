@@ -1,0 +1,4 @@
+requests
+psutil
+argparse
+pyusb
