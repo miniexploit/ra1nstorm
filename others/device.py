@@ -12,8 +12,11 @@ def get_devinfo():
 			identifier = st.replace("PRODUCT: ", "")
 		if "ECID" in st:
 			ecid = st.replace("ECID: ", "")
+			ecid = st.replace("ECID: ", "")
+		if "NONC" in st:
+			apnonce = st.replace("NONC: ","")
 	try:
-		return identifier, identifier[:identifier.find(",")].lower(), board, ecid
+		return identifier, identifier[:identifier.find(",")].lower(), board, ecid, apnonce
 	except UnboundLocalError:
 		sys.exit("[ERROR] Unable to get device info, make sure irecovery version is >= 1.0.1. Exiting.")
 def detect_device():
