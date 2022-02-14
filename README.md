@@ -46,4 +46,4 @@ After downloading the binaries above, you have to move them to PATH (e.g. ```/us
 ## Issue
 Feel free to open an issue if you need support/report a bug
 ## Credits
-Special thanks to [m1stadev](https://github.com/m1stadev) for wikiproxy and buildmanifest parser (ipsw.py and manifest.py files of ra1nstorm are copied from Inferius)
+Special thanks to [m1stadev](https://github.com/m1stadev) for wikiproxy and buildmanifest parser
