@@ -24,7 +24,7 @@ class check_requirements:
 				subprocess.check_call((binary, '-V'), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 			except subprocess.CalledProcessError:
 				reterror("This irecovery version is too old. Exiting.")
-			irecv_ver = subprocess.run((binary, '-V'), stdout=subprocess.PIPE, universal_newlines=True).stdout
+			irecv_ver = subprocess.run((binary, '-V'), stdout=subprocess.PIPE, universal_newlines=True).stdout # double check
 			irecv_ver = irecv_ver.replace("irecovery ","")
 			retassure(int(irecv_ver[:-1].replace(".", "")) >= 101, f"Expected irecovery version to be greater than or equal to 1.0.1 but found version {irecv_ver}. Exiting.")
 		elif binary == "futurerestore":
