@@ -13,6 +13,7 @@ class check_requirements:
 		self.check_bin('irecovery')
 		self.check_bin('tsschecker')
 		self.check_bin('Kernel64Patcher')
+		self.check_bin('Kairos')
 		self.check_bin('ldid')
 		self.check_bin('asr64_patcher')
 		print("Checking hard disk free space...")
