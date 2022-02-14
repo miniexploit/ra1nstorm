@@ -75,7 +75,7 @@ def main():
 	check_requirements()
 	device.detect_device()
 	identifier, board, ecid, apnonce = device.get_devinfo()
-	retassure(device.issupported(identifier), "Device is not supported. Exiting.")
+	#retassure(device.issupported(identifier), "Device is not supported. Exiting.")
 	buildmanifest = Manifest(ipsw.read_file('BuildManifest.plist'))
 	ipsw.verify_ipsw_to_be_valid_for_connected_device(identifier, buildmanifest)
 	ipsw.get_ipswinfo(buildmanifest)
