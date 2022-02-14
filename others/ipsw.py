@@ -39,4 +39,10 @@ class IPSW:
 			ios_ver += f"{ver}."
 		ios_ver = ios_ver[:-1]
 		print(f"iPSW info: Version: {ios_ver} BuildID: {buildmanifest.get_buildid()}")
-		retassure(11 <= buildmanifest.version[0] <= 14, f"iOS {buildmanifest.version[0]}.{buildmanifest.version[1]} is not supported. Exiting.")
+			def get_ipswinfo(self, buildmanifest):
+		ios_ver = ""
+		for ver in buildmanifest.version:
+			ios_ver += f"{ver}."
+		ios_ver = ios_ver[:-1]
+		print(f"iPSW info: Version: {ios_ver} BuildID: {buildmanifest.get_buildid()}")
+		retassure(11 <= buildmanifest.version[0] <= 14, f"iOS {ios_ver} is not supported. Exiting.")
