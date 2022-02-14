@@ -12,9 +12,9 @@ from zipfile import ZipFile, is_zipfile
 class IPSW:
 	def __init__(self, ipsw: Path):
 		self.ipsw = ipsw
+		self.verify_ipsw()
 	def __str__(self) -> str:
 		return str(self.ipsw)
-		self.verify_ipsw()
 	def read_file(self, file: str) -> Optional[bytes]:
 		try:
 			with ZipFile(self.ipsw, 'r') as ipsw:
