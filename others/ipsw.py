@@ -14,7 +14,7 @@ class IPSW:
 		self.ipsw = ipsw
 	def __str__(self) -> str:
 		return str(self.ipsw)
-
+		self.verify_ipsw()
 	def read_file(self, file: str) -> Optional[bytes]:
 		try:
 			with ZipFile(self.ipsw, 'r') as ipsw:
@@ -28,10 +28,11 @@ class IPSW:
 				f.write(ipsw.read(file))
 		except:
 			reterror(f"Couldn't extract {file}")
-	def verify_ipsw(self, identifier, buildmanifest):
+	def verify_ipsw(self):
 		print("Verifying iPSW...")
 		retassure(os.path.exists(self.ipsw), f"iPSW not found at: {self.ipsw}")
 		retassure(is_zipfile(self.ipsw), f"'{self.ipsw}' is not a valid iPSW")
+	def verify_ipsw_to_be_valid_for_connected_device(self, identifier, buildmanifest):
 		retassure(identifier in buildmanifest.supported_devices, "This iPSW can't be used to restore the connected device. Exiting.")
 	def get_ipswinfo(self, buildmanifest):
 		ios_ver = ""
@@ -39,10 +40,4 @@ class IPSW:
 			ios_ver += f"{ver}."
 		ios_ver = ios_ver[:-1]
 		print(f"iPSW info: Version: {ios_ver} BuildID: {buildmanifest.get_buildid()}")
-			def get_ipswinfo(self, buildmanifest):
-		ios_ver = ""
-		for ver in buildmanifest.version:
-			ios_ver += f"{ver}."
-		ios_ver = ios_ver[:-1]
-		print(f"iPSW info: Version: {ios_ver} BuildID: {buildmanifest.get_buildid()}")
-		retassure(11 <= buildmanifest.version[0] <= 14, f"iOS {ios_ver} is not supported. Exiting.")
+		retassure(11 <= buildmanifest.version[0] <= 14, f"iOS {buildmanifest.version[0]}.{buildmanifest.version[1]} is not supported. Exiting.")
