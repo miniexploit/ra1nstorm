@@ -77,6 +77,7 @@ def main():
 	ipsw.get_ipswinfo(buildmanifest)
 	_ibss, _ibec = buildmanifest.get_bootchaininfo(board)
 	restoreramdisk, updateramdisk = api.get_ramdiskinfo(identifier, board, buildmanifest.get_buildid())
+	kernelcache = buildmanifest.get_kernelinfo(board)
 	with TemporaryDirectory() as tmpdir:
 		if args.update:
 			print("[WARNING] '-u'/--update' option is untested, use it at your own risk!")
@@ -90,7 +91,6 @@ def main():
 		ipsw.extract_file(ramdisk_path, f"{tmpdir}/ramdisk_org.dmg")
 		unpack_rdsk = subprocess.run(('img4','-i',f"{tmpdir}/ramdisk_org.dmg",'-o',f"{tmpdir}/ramdisk.dmg"), stdout=subprocess.DEVNULL)
 		retassure(unpack_rdsk.returncode == 0, "Failed to unpack ramdisk. Exiting.")
-		kernelcache = buildmanifest.get_kernelinfo(board)
 		ipsw.extract_file(kernelcache ,f"{tmpdir}/kernelcache.release.extracted")
 		unpack_krnl = subprocess.run(('img4','-i',f"{tmpdir}/kernelcache.release.extracted",'-o',f"{tmpdir}/kcache.raw"), stdout=subprocess.DEVNULL)
 		retassure(unpack_krnl.returncode == 0, "Failed to unpack kernelcache. Exiting.")
