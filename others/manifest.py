@@ -8,3 +8,16 @@ class Manifest:
 		self.supported_devices = self.manifest['SupportedProductTypes']
 	def get_buildid(self):
 		return self.manifest['ProductBuildVersion']
+		
+	def get_bootchaininfo(self, board):
+		for deviceclass in self.manifest['BuildIdentities']:
+			if deviceclass['Info']['DeviceClass'] == board:	
+				devclass = deviceclass
+				break
+		return devclass['Manifest']['iBSS']['Info']['Path'], devclass['Manifest']['iBEC']['Info']['Path']
+	def get_kernelinfo(self, board):
+		for deviceclass in self.manifest['BuildIdentities']:
+			if deviceclass['Info']['DeviceClass'] == board:	
+				devclass = deviceclass
+				break
+		return devclass['Manifest']['RestoreKernelCache']['Info']['Path']
