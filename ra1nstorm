@@ -2,7 +2,7 @@
 
 # Made by MiniExploit
 
-
+import shutil
 import os, sys
 from tempfile import TemporaryDirectory
 import subprocess
@@ -10,14 +10,15 @@ from others.ipsw import IPSW
 from others.manifest import Manifest
 from others.restore import Restore
 from others.dependencies import check_requirements
+from others.kerneldiff import diff_kernel
+from others.error import retassure
 from others import device, api
 import argparse
 import platform
-
+import time
 def decrypt(path, iv, key, type, tmpdir):
-	dec = subprocess.run(('img4','-i', path , '-o', f'{tmpdir}/{type}.dec'), stdout=subprocess.DEVNULL)
-	if dec.returncode != 0:
-		sys.exit(f"[ERROR] Failed to decrypt {type}. Exiting.")
+	dec = subprocess.run(('img4','-i', path , '-o', f'{tmpdir}/{type}.dec','-k',f'{iv}{key}'), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+	retassure(dec.returncode == 0, f"Failed to decrypt {type}. Exiting.")
 def patch_bootloader(path, type, identifier, board, buildid, tmpdir):
 	print(f"Patching {type}...")
 	if not os.path.exists("/tmp/futurerestore"):
@@ -27,77 +28,74 @@ def patch_bootloader(path, type, identifier, board, buildid, tmpdir):
 		decrypt(path, iBSS_iv, iBSS_key, type, tmpdir)
 	if type == "iBEC":
 		decrypt(path, iBEC_iv, iBEC_key, type, tmpdir)
-	patch_args = [
-		'Kairos',
-		f'{tmpdir}/{type}.dec',
-		f'{tmpdir}/{type}.patched'
-	]
-	if type == "iBEC":
-		patch_args.append('-n')       # futurerestore will set nonce so
-	patch = subprocess.run(patch_args, stdout=subprocess.DEVNULL)
-	if patch.returncode != 0:
-		sys.exit(f"[ERROR] Failed to patch {type}. Exiting.")
-def patch_kernel(kernelcache, tmpdir):
+
+	patch = subprocess.run(('Kairos',f'{tmpdir}/{type}.dec',f'{tmpdir}/{type}.patched','-n'), stdout=subprocess.DEVNULL)
+	retassure(patch.returncode == 0, f"Failed to patch {type}. Exiting.")
+
+def patch_kernel(kernelcache, kernelorg, output, tmpdir):
 	print("Patching kernelcache...")
 	patch_kcache = subprocess.run(('Kernel64Patcher',kernelcache,f'{tmpdir}/kcache.patched','-a'), stdout=subprocess.DEVNULL)
-	if patch_kcache.returncode != 0:
-		sys.exit("[ERROR] Failed to patch kernelcache AMFI. Exiting.")
-	pack_krnl = subprocess.run(('img4tool','-c',f'{tmpdir}/kernelcache.im4p','-t','rkrn',f'{tmpdir}/kcache.patched','--compression','complzss'), stdout=subprocess.DEVNULL)
-	if pack_krnl.returncode != 0:
-		sys.exit("[ERROR] Failed to pack kernelcache. Exiting.")
+	retassure(patch_kcache.returncode == 0, "Failed to patch kernelcache AMFI. Exiting.")
+	diff_kernel(kernelcache, f'{tmpdir}/kcache.patched', f"{tmpdir}/kcache.diff")
+	pack_krnl = subprocess.run(('img4','-i',kernelorg,'-o',output,'-T','rkrn','-P', f"{tmpdir}/kcache.diff"), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+	retassure(pack_krnl.returncode == 0, "Failed to pack kernelcache. Exiting.")
 
-def patch_ramdisk(ramdisk, tmpdir):
+def patch_ramdisk(ramdisk, output, tmpdir):
 	print("Patching ramdisk...")
-	if os.path.exists(f"{tmpdir}/rdsk_mnpt"):
-		os.rmdir(f"{tmpdir}/rdsk_mnpt")
 	os.makedirs(f"{tmpdir}/rdsk_mnpt")
 	attach_rdsk = subprocess.run(('hdiutil','attach', ramdisk, '-mountpoint',f'{tmpdir}/rdsk_mnpt'), stdout=subprocess.DEVNULL)
-	if attach_rdsk.returncode != 0:
-		sys.exit("[ERROR] Failed to mount ramdisk. Exiting.")
-	asr64 = subprocess.run(('asr64_patcher',f'{tmpdir}/rdsk_mnpt/usr/sbin/asr',f'{tmpdir}/rdsk_mnpt/usr/sbin/asr'), stdout=subprocess.DEVNULL)
-	if asr64.returncode != 0:
-		sys.exit("[ERROR] Failed to patch asr. Exiting.")
+	retassure(attach_rdsk.returncode == 0, "Failed to mount ramdisk. Exiting.")
+	shutil.move(f'{tmpdir}/rdsk_mnpt/usr/sbin/asr', f'{tmpdir}/asr.extracted')
+	asr64 = subprocess.run(('asr64_patcher',f'{tmpdir}/asr.extracted',f'{tmpdir}/patched_asr'), stdout=subprocess.DEVNULL)
+	retassure(asr64.returncode == 0, "Failed to patch asr. Exiting.")
+	ents = subprocess.run(('ldid', '-e', f'{tmpdir}/asr.extracted'), stdout=subprocess.PIPE, universal_newlines=True)
+	retassure(ents.returncode == 0, "Failed to extract ASR entitlements. Exiting.")
+	with open(f'{tmpdir}/asr.xml', 'w') as f:
+		f.write(ents.stdout)
+	sign_asr = subprocess.run(('ldid',f'-S{tmpdir}/asr.xml',f'{tmpdir}/patched_asr'), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+	retassure(sign_asr.returncode == 0, "Failed to sign patched ASR. Exiting.")
+	os.chmod(f'{tmpdir}/patched_asr', 0o755)
+	shutil.move(f'{tmpdir}/patched_asr', f'{tmpdir}/rdsk_mnpt/usr/sbin/asr')
+	time.sleep(3)
 	detach = subprocess.run(('hdiutil','detach',f'{tmpdir}/rdsk_mnpt'), stdout=subprocess.DEVNULL)
-	if detach.returncode != 0:
-		sys.exit("[ERROR] Failed to ummount ramdisk. Exiting.")
+	retassure(detach.returncode == 0, "Failed to ummount ramdisk. Exiting.")
 	os.rmdir(f"{tmpdir}/rdsk_mnpt")
-	pack_rdsk = subprocess.run(('img4tool','-c',f'{tmpdir}/ramdisk.im4p','-t','rdsk',ramdisk,'--compression','complzss'), stdout=subprocess.DEVNULL)
-
+	pack_rdsk = subprocess.run(('img4','-i',ramdisk,'-o',output,'-A','-T','rdsk'), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+	retassure(pack_rdsk.returncode == 0, "Failed to pack ramdisk. Exiting.")
 def main():
 	parser = argparse.ArgumentParser(description='ra1nstorm - Tethered downgrade 64-bit iDevices vulnerable to checkm8', usage="ra1nstorm iPSW [-u]")
 	parser.add_argument('ipsw', metavar='iPSW', nargs=1, help='iPSW file used for restoring')
-	parser.add_argument('-u', '--update', help='Keep data while restoring IPSW (Untested)', action='store_true')
+	parser.add_argument('-u', '--update', help='Keep data while restoring (Untested)', action='store_true')
 	args = parser.parse_args()
 	ipsw = IPSW(args.ipsw[0])
 	check_requirements()
 	device.detect_device()
+	identifier, board, ecid, apnonce = device.get_devinfo()
+	retassure(device.issupported(identifier), "Device is not supported. Exiting.")
 	buildmanifest = Manifest(ipsw.read_file('BuildManifest.plist'))
+	ipsw.verify_ipsw(identifier, buildmanifest)
 	ipsw.get_ipswinfo(buildmanifest)
-	identifier, codename, board, ecid, apnonce = device.get_devinfo()
-	ibss_name, ibec_name = api.get_bootchaininfo(identifier, board, buildmanifest.get_buildid())
+	_ibss, _ibec = buildmanifest.get_bootchaininfo(board)
 	restoreramdisk, updateramdisk = api.get_ramdiskinfo(identifier, board, buildmanifest.get_buildid())
 	with TemporaryDirectory() as tmpdir:
 		if args.update:
-			print("[WARNING] '--update' option is untested, use it at your own risk!")
+			print("[WARNING] '-u'/--update' option is untested, use it at your own risk!")
 			ramdisk_path = updateramdisk
 		else:
 			ramdisk_path = restoreramdisk
-		ipsw.extract_file(f'Firmware/dfu/{ibss_name}', f'{tmpdir}/ibss.extracted')
-		ipsw.extract_file(f'Firmware/dfu/{ibec_name}', f'{tmpdir}/ibec.extracted')
+		ipsw.extract_file(_ibss, f'{tmpdir}/ibss.extracted')
+		ipsw.extract_file(_ibec, f'{tmpdir}/ibec.extracted')
 		patch_bootloader(f'{tmpdir}/ibss.extracted', 'iBSS', identifier, board, buildmanifest.get_buildid(), tmpdir)
 		patch_bootloader(f'{tmpdir}/ibec.extracted', 'iBEC', identifier, board, buildmanifest.get_buildid(), tmpdir)
 		ipsw.extract_file(ramdisk_path, f"{tmpdir}/ramdisk_org.dmg")
 		unpack_rdsk = subprocess.run(('img4','-i',f"{tmpdir}/ramdisk_org.dmg",'-o',f"{tmpdir}/ramdisk.dmg"), stdout=subprocess.DEVNULL)
-		if unpack_rdsk.returncode != 0:
-			sys.exit("[ERROR] Failed to unpack ramdisk. Exiting.")
-
-		ipsw.extract_file(f"kernelcache.release.{codename}",f"{tmpdir}/kernelcache.release.{codename}")
-		unpack_krnl = subprocess.run(('img4','-i',f"{tmpdir}/kernelcache.release.{codename}",'-o',f"{tmpdir}/kcache.raw"), stdout=subprocess.DEVNULL)
-		if unpack_krnl.returncode != 0:
-			sys.exit("[ERROR] Failed to unpack kernelcache. Exiting.")
-
-		patch_ramdisk(f"{tmpdir}/ramdisk.dmg", tmpdir)
-		patch_kernel(f"{tmpdir}/kcache.raw", tmpdir)
+		retassure(unpack_rdsk.returncode == 0, "Failed to unpack ramdisk. Exiting.")
+		kernelcache = buildmanifest.get_kernelinfo(board)
+		ipsw.extract_file(kernelcache ,f"{tmpdir}/kernelcache.release.extracted")
+		unpack_krnl = subprocess.run(('img4','-i',f"{tmpdir}/kernelcache.release.extracted",'-o',f"{tmpdir}/kcache.raw"), stdout=subprocess.DEVNULL)
+		retassure(unpack_krnl.returncode == 0, "Failed to unpack kernelcache. Exiting.")
+		patch_ramdisk(f'{tmpdir}/ramdisk.dmg', f'{tmpdir}/ramdisk.im4p', tmpdir)
+		patch_kernel(f'{tmpdir}/kcache.raw', f'{tmpdir}/kernelcache.release.extracted', f'{tmpdir}/kernelcache.im4p', tmpdir)
 		restore = Restore(identifier, args.ipsw[0])
 		if not os.path.exists(f"{tmpdir}/tempblobs"):
 			os.makedirs(f'{tmpdir}/tempblobs')
