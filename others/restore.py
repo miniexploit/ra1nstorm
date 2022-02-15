@@ -85,8 +85,7 @@ class Restore:
 			'--rdsk',
 			ramdisk,
 			'--rkrn',
-			kernelcache,
-			'-d'
+			kernelcache
 		]
 		if baseband:
 			args.append('--latest-baseband')
