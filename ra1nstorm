@@ -83,7 +83,7 @@ def main():
 	restoreramdisk, updateramdisk = api.get_ramdiskinfo(identifier, board, buildmanifest.get_buildid())
 	with TemporaryDirectory() as tmpdir:
 		if args.update:
-			print("[WARNING] -u'/--update option is untested, use it at your own risk!")
+			print("[WARNING] -u/--update option is untested, use it at your own risk!")
 			ramdisk_path = updateramdisk
 		else:
 			ramdisk_path = restoreramdisk
