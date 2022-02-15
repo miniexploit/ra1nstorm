@@ -26,7 +26,7 @@ class Restore:
 			'-s',
 			'--save-path',
 			save_path,
-			'--nocache'
+			'--nocache',
 		]
 		if apnonce:
 			args.append('--apnonce')
@@ -66,6 +66,13 @@ class Restore:
 		save_im4m = subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 		retassure(save_im4m.returncode == 0, "Failed to save IM4M. Exiting.")
 		self.im4m = output
+
+	def getGeneratorFromSHSH2(self):	# just put here, might be used in the future
+		with open(self.blob, 'rb') as f:
+			data = plistlib.loads(f.read())
+		retassure(data['generator'] is not None, "Failed to read nonce generator from SHSH. Exiting.")
+		return data['generator']
+
 	def restore(self, baseband, ramdisk, kernelcache, update):
 		print("Restoring device...")
 		args = [
@@ -78,7 +85,8 @@ class Restore:
 			'--rdsk',
 			ramdisk,
 			'--rkrn',
-			kernelcache
+			kernelcache,
+			'-d'
 		]
 		if baseband:
 			args.append('--latest-baseband')
