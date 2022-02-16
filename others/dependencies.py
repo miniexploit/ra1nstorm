@@ -32,5 +32,4 @@ class check_requirements:
 			retassure(not any(("--rdsk" not in fr_usage, "--rkrn" not in fr_usage, "--skip-blob" not in fr_usage)), "This Futurerestore build does not allow specifying custom ramdisk and kernelcache. Exiting.")
 	def check_space(self):
 		disk = psutil.disk_usage('/')
-		if disk.free / (2**30) < 3:
-			reterror("Less than 3GB free space on this computer. Exiting.")
+		retassure(disk.free / (2**30) >= 3, "Less than 3GB free space on this computer. Exiting.")
