@@ -9,15 +9,10 @@ class Manifest:
 	def get_buildid(self):
 		return self.manifest['ProductBuildVersion']
 		
-	def get_bootchaininfo(self, board):
+	def get_comp(self, board, comp):
 		for deviceclass in self.manifest['BuildIdentities']:
 			if deviceclass['Info']['DeviceClass'] == board:	
 				devclass = deviceclass
 				break
-		return devclass['Manifest']['iBSS']['Info']['Path'], devclass['Manifest']['iBEC']['Info']['Path']
-	def get_kernelinfo(self, board):
-		for deviceclass in self.manifest['BuildIdentities']:
-			if deviceclass['Info']['DeviceClass'] == board:	
-				devclass = deviceclass
-				break
-		return devclass['Manifest']['RestoreKernelCache']['Info']['Path']
+		return devclass['Manifest'][comp]['Info']['Path']
+
