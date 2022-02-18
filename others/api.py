@@ -1,15 +1,6 @@
 import requests
 import json
 
-def get_ramdiskinfo(identifier, board, buildid):
-	f = requests.get(f"https://api.m1sta.xyz/wikiproxy/{identifier}/{board}/{buildid}").json()
-	for dev in f['keys']:
-		if dev['image'] == "RestoreRamdisk":
-			RestoreRamdisk = dev['filename']
-		if dev['image'] == "UpdateRamdisk":
-			UpdateRamdisk = dev['filename']
-			
-	return RestoreRamdisk, UpdateRamdisk
 def get_keys(identifier, board, buildid):
 	f = requests.get(f"https://api.m1sta.xyz/wikiproxy/{identifier}/{board}/{buildid}").json()
 	for dev in f['keys']:
