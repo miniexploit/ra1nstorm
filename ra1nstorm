@@ -12,16 +12,20 @@ from others.restore import Restore
 from others.dependencies import check_requirements
 from others.kerneldiff import diff_kernel
 from others.error import retassure
+from others.device import Device
 from others import device, api
 import argparse
 import platform
 import time
+import pathlib
+
 def decrypt(path, iv, key, type, tmpdir):
 	dec = subprocess.run(('img4','-i', path , '-o', f'{tmpdir}/{type}.dec','-k',f'{iv}{key}'), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 	retassure(dec.returncode == 0, f"Failed to decrypt {type}. Exiting.")
-def patch_bootloader(path, type, identifier, board, buildid, tmpdir):
+
+def patch_bootloader(path, type, device, buildid, tmpdir):
 	print(f"Patching {type}...")
-	iBSS_iv, iBSS_key, iBEC_iv, iBEC_key = api.get_keys(identifier, board, buildid)
+	iBSS_iv, iBSS_key, iBEC_iv, iBEC_key = api.get_keys(device.identifier, device.board, buildid)
 	if type == "iBSS":
 		decrypt(path, iBSS_iv, iBSS_key, type, tmpdir)
 	if type == "iBEC":
@@ -56,7 +60,8 @@ def patch_ramdisk(ramdisk, output, tmpdir):
 	retassure(ents.returncode == 0, "Failed to extract ASR entitlements. Exiting.")
 	with open(f'{tmpdir}/asr.xml', 'w') as f:
 		f.write(ents.stdout)
-	sign_asr = subprocess.run(('ldid',f'-S{tmpdir}/asr.xml',f'{tmpdir}/patched_asr'), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+	# TODO: Patch libimg4
+	sign_asr = subprocess.run(('ldid','-Cadhoc','-Kothers/signcert.p12',f'-S{tmpdir}/asr.xml',f'{tmpdir}/patched_asr'), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) # Thanks Cryptic
 	retassure(sign_asr.returncode == 0, "Failed to sign patched ASR. Exiting.")
 	os.chmod(f'{tmpdir}/patched_asr', 0o755)
 	shutil.move(f'{tmpdir}/patched_asr', f'{tmpdir}/rdsk_mnpt/usr/sbin/asr')
@@ -66,53 +71,60 @@ def patch_ramdisk(ramdisk, output, tmpdir):
 	os.rmdir(f"{tmpdir}/rdsk_mnpt")
 	pack_rdsk = subprocess.run(('img4','-i',ramdisk,'-o',output,'-A','-T','rdsk'), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 	retassure(pack_rdsk.returncode == 0, "Failed to pack ramdisk. Exiting.")
+
 def main():
 	parser = argparse.ArgumentParser(description='ra1nstorm - Tethered downgrade 64-bit iDevices vulnerable to checkm8', usage="ra1nstorm iPSW [-u]")
 	parser.add_argument('ipsw', metavar='iPSW', nargs=1, help='iPSW file used for restoring')
+	parser.add_argument('-s','--save-log',nargs=1, metavar='PATH', help='Specify path for saving futurerestore log')
 	parser.add_argument('-u', '--update', help='Keep data while restoring (Untested)', action='store_true')
 	args = parser.parse_args()
-	ipsw = IPSW(args.ipsw[0])
+	os.chdir(pathlib.Path().resolve())
+	if args.save_log:
+		retassure(os.path.isdir(args.save_log[0]), "Provided path to save log is not a directory. Exiting.")
+
 	check_requirements()
-	device.detect_device()
-	identifier, board, ecid, apnonce = device.get_devinfo()
+	ipsw = IPSW(args.ipsw[0])
+	device = Device()
 	#retassure(device.issupported(identifier), "Device is not supported. Exiting.")
 	buildmanifest = Manifest(ipsw.read_file('BuildManifest.plist'))
-	ipsw.verify_ipsw_to_be_valid_for_connected_device(identifier, buildmanifest)
+	ipsw.verify_ipsw_to_be_valid_for_connected_device(device.identifier, buildmanifest)
 	ipsw.get_ipswinfo(buildmanifest)
-	_ibss, _ibec = buildmanifest.get_bootchaininfo(board)
-	restoreramdisk, updateramdisk = api.get_ramdiskinfo(identifier, board, buildmanifest.get_buildid())
+	_ibss = buildmanifest.get_comp(device.board, 'iBSS')
+	_ibec = buildmanifest.get_comp(device.board, 'iBEC')
 	with TemporaryDirectory() as tmpdir:
 		if args.update:
 			print("[WARNING] -u/--update option is untested, use it at your own risk!")
-			ramdisk_path = updateramdisk
-		else:
-			ramdisk_path = restoreramdisk
+
+		ramdisk_path = buildmanifest.get_comp(device.board, 'RestoreRamDisk')
 		ipsw.extract_file(_ibss, f'{tmpdir}/ibss.extracted')
 		ipsw.extract_file(_ibec, f'{tmpdir}/ibec.extracted')
-		patch_bootloader(f'{tmpdir}/ibss.extracted', 'iBSS', identifier, board, buildmanifest.get_buildid(), tmpdir)
-		patch_bootloader(f'{tmpdir}/ibec.extracted', 'iBEC', identifier, board, buildmanifest.get_buildid(), tmpdir)
+		patch_bootloader(f'{tmpdir}/ibss.extracted', 'iBSS', device, buildmanifest.get_buildid(), tmpdir)
+		patch_bootloader(f'{tmpdir}/ibec.extracted', 'iBEC', device, buildmanifest.get_buildid(), tmpdir)
 		ipsw.extract_file(ramdisk_path, f"{tmpdir}/ramdisk_org.dmg")
 		unpack_rdsk = subprocess.run(('img4','-i',f"{tmpdir}/ramdisk_org.dmg",'-o',f"{tmpdir}/ramdisk.dmg"), stdout=subprocess.DEVNULL)
 		retassure(unpack_rdsk.returncode == 0, "Failed to unpack ramdisk. Exiting.")
-		kernelcache = buildmanifest.get_kernelinfo(board)
+		kernelcache = buildmanifest.get_comp(device.board, 'RestoreKernelCache')
 		ipsw.extract_file(kernelcache ,f"{tmpdir}/kernelcache.release.extracted")
 		unpack_krnl = subprocess.run(('img4','-i',f"{tmpdir}/kernelcache.release.extracted",'-o',f"{tmpdir}/kcache.raw"), stdout=subprocess.DEVNULL)
 		retassure(unpack_krnl.returncode == 0, "Failed to unpack kernelcache. Exiting.")
 		patch_ramdisk(f'{tmpdir}/ramdisk.dmg', f'{tmpdir}/ramdisk.im4p', tmpdir)
 		patch_kernel(f'{tmpdir}/kcache.raw', f'{tmpdir}/kernelcache.release.extracted', f'{tmpdir}/kernelcache.im4p', tmpdir)
-		restore = Restore(identifier, args.ipsw[0])
+		restore = Restore(device, args.ipsw[0])
 		if not os.path.exists(f"{tmpdir}/tempblobs"):
 			os.makedirs(f'{tmpdir}/tempblobs')
 		if not os.path.exists(f'{tmpdir}/apnonceblobs'):
 			os.makedirs(f'{tmpdir}/apnonceblobs')
-		restore.save_blobs(ecid, board, f'{tmpdir}/apnonceblobs', apnonce)
+		restore.save_blobs(f'{tmpdir}/apnonceblobs', True)
 		restore.save_im4m(f'{tmpdir}/im4m')
 		if not os.path.exists("/tmp/futurerestore"):
 			os.makedirs("/tmp/futurerestore")
-		restore.sign_bootloader(f'{tmpdir}/iBSS.patched',f'/tmp/futurerestore/ibss.{board}.{buildmanifest.get_buildid()}.patched.img4','iBSS')
-		restore.sign_bootloader(f'{tmpdir}/iBEC.patched',f'/tmp/futurerestore/ibec.{board}.{buildmanifest.get_buildid()}.patched.img4','iBEC')
-		restore.save_blobs(ecid, board, f'{tmpdir}/tempblobs')
-		restore.restore(device.check_bb(identifier), f"{tmpdir}/ramdisk.im4p", f'{tmpdir}/kernelcache.im4p', args.update)
+		restore.sign_bootloader(f'{tmpdir}/iBSS.patched',f'/tmp/futurerestore/ibss.{device.board}.{buildmanifest.get_buildid()}.patched.img4','iBSS')
+		restore.sign_bootloader(f'{tmpdir}/iBEC.patched',f'/tmp/futurerestore/ibec.{device.board}.{buildmanifest.get_buildid()}.patched.img4','iBEC')
+		restore.save_blobs(f'{tmpdir}/tempblobs', False)
+		if args.save_log:
+			restore.restore(f"{tmpdir}/ramdisk.im4p", f'{tmpdir}/kernelcache.im4p', args.update, args.save_log[0])
+		else:
+			restore.restore(f"{tmpdir}/ramdisk.im4p", f'{tmpdir}/kernelcache.im4p', args.update)
 
 if __name__ == '__main__':
 	main()
