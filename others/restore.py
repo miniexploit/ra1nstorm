@@ -5,11 +5,11 @@ import time
 from others.error import retassure
 
 class Restore:
-	def __init__(self, identifier, ipsw):
-		self.identifier = identifier
+	def __init__(self, device_struct, ipsw):
+		self.device = device_struct
 		self.ipsw = ipsw
 
-	def save_blobs(self, ecid, board, save_path, apnonce=None):
+	def save_blobs(self, save_path, apnonce):
 		if apnonce:
 			print("Saving temporary SHSH for signing bootchain...")
 		else:
@@ -17,11 +17,11 @@ class Restore:
 		args = [
 			'tsschecker',
 			'-d',
-			self.identifier,
+			self.device.identifier,
 			'-B',
-			board,
+			self.device.board,
 			'-e',
-			ecid,
+			self.device.ecid,
 			'-l',
 			'-s',
 			'--save-path',
@@ -30,7 +30,7 @@ class Restore:
 		]
 		if apnonce:
 			args.append('--apnonce')
-			args.append(apnonce)
+			args.append(self.device.apnonce)
 		tsschecker = subprocess.run(args, stdout=subprocess.PIPE, universal_newlines=True)
 		retassure(tsschecker.returncode == 0, "Failed to save SHSH blobs. Exiting.")
 		if '/apnonceblobs' in save_path:
@@ -73,7 +73,7 @@ class Restore:
 		retassure(data['generator'] is not None, "Failed to read nonce generator from SHSH. Exiting.")
 		return data['generator']
 
-	def restore(self, baseband, ramdisk, kernelcache, update):
+	def restore(self, ramdisk, kernelcache, update, log_path=None):
 		print("Restoring device...")
 		args = [
 			'futurerestore',
@@ -87,11 +87,18 @@ class Restore:
 			'--rkrn',
 			kernelcache
 		]
-		if baseband:
+		if self.device.baseband:
 			args.append('--latest-baseband')
 		else:
 			args.append('--no-baseband')
 		if update:
 			args.append('-u')
 		args.append(self.ipsw)
-		subprocess.run(args, universal_newlines=True)
+		if log_path:
+			if log_path.endswith('/'):
+				log_path = log_path[:-1]
+			print(os.popen(' '.join(args)).read(), file=open(f'{log_path}/restore.log', 'a'))
+			retassure('Done: restoring succeeded!' in open(f'{log_path}/restore.log','r').read(), f'Restore failed! Log saved to {log_path}/restore.log')
+			print(f'Restore succeeded! Log saved to {log_path}/restore.log')
+		else:
+			subprocess.run(args, universal_newlines=True)
