@@ -54,7 +54,7 @@ class Restore:
 		sign = subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 		retassure(sign.returncode == 0, "Failed to sign bootloader. Exiting.")
 	def save_im4m(self, output):
-		print("Saving IM4M for signing bootloaders...")
+		print("Saving IM4M for signing bootchain...")
 		args = [
 			'img4tool',
 			'-e',
