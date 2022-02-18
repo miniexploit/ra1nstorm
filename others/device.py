@@ -22,6 +22,13 @@ class Device:
 				self.ecid = st.replace("ECID: ", "")
 			if "NONC" in st:
 				self.apnonce = st.replace("NONC: ","")
+		try:
+			self.board
+			self.identifier
+			self.ecid
+			self.apnonce
+		except AttributeError:
+			reterror("Unable to get device info, possibly irecovery version is old.")
 
 	def detect_device(self):
 		device = usb.core.find(idVendor=0x5AC, idProduct=0x1227)
