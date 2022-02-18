@@ -12,11 +12,13 @@ usage: ra1nstorm iPSW [-u]
 ra1nstorm - Tethered downgrade 64-bit iDevices vulnerable to checkm8
 
 positional arguments:
-  iPSW          iPSW file used for restoring
+  iPSW                  iPSW file used for restoring
 
 optional arguments:
-  -h, --help    show this help message and exit
-  -u, --update  Keep data while restoring IPSW (Untested)
+  -h, --help            show this help message and exit
+  -s PATH, --save-log PATH
+                        Specify path for saving futurerestore log
+  -u, --update          Keep data while restoring (Untested)
 ```
 ## Supported version
 All iOS versions from iOS 11 - iOS 14 are supported
