@@ -34,7 +34,7 @@ class Restore:
 		tsschecker = subprocess.run(args, stdout=subprocess.PIPE, universal_newlines=True)
 		retassure(tsschecker.returncode == 0, "Failed to save SHSH blobs. Exiting.")
 		if '/apnonceblobs' in save_path:
-			self.blob = glob.glob(f"{save_path}/*.shsh*")[0]
+			self.apnonce_blob = glob.glob(f"{save_path}/*.shsh*")[0]
 		else:
 			self.blob = glob.glob(f"{save_path}/*.shsh*")[0]
 	def sign_bootloader(self, path, output, type):
@@ -53,16 +53,26 @@ class Restore:
 		]
 		sign = subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 		retassure(sign.returncode == 0, "Failed to sign bootloader. Exiting.")
-	def save_im4m(self, output):
+	def save_im4m(self, output, custom_blob=None):
 		print("Saving IM4M for signing bootchain...")
-		args = [
-			'img4tool',
-			'-e',
-			'-s',
-			self.blob,
-			'-m',
-			output
-		]
+		if custom_blob:
+			args = [
+				'img4tool',
+				'-e',
+				'-s',
+				custom_blob,
+				'-m',
+				output
+			]
+		else:		
+			args = [
+				'img4tool',
+				'-e',
+				'-s',
+				self.apnonce_blob,
+				'-m',
+				output
+			]
 		save_im4m = subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 		retassure(save_im4m.returncode == 0, "Failed to save IM4M. Exiting.")
 		self.im4m = output
@@ -73,20 +83,34 @@ class Restore:
 		retassure(data['generator'] is not None, "Failed to read nonce generator from SHSH. Exiting.")
 		return data['generator']
 
-	def restore(self, ramdisk, kernelcache, update, log_path=None):
+	def restore(self, ramdisk, kernelcache, update, custom_blob=None, log_path=None):
 		print("Restoring device...")
-		args = [
-			'futurerestore',
-			'-t',
-			self.blob,
-			'--skip-blob',
-			'--latest-sep',
-			'--use-pwndfu',
-			'--rdsk',
-			ramdisk,
-			'--rkrn',
-			kernelcache
-		]
+		if custom_blob:
+			args = [
+				'futurerestore',
+				'-t',
+				custom_blob,
+				'--skip-blob',
+				'--latest-sep',
+				'--use-pwndfu',
+				'--rdsk',
+				ramdisk,
+				'--rkrn',
+				kernelcache
+			]	
+		else:	
+			args = [
+					'futurerestore',
+					'-t',
+					self.blob,
+					'--skip-blob',
+					'--latest-sep',
+					'--use-pwndfu',
+					'--rdsk',
+					ramdisk,
+					'--rkrn',
+					kernelcache
+				]
 		if self.device.baseband:
 			args.append('--latest-baseband')
 		else:
