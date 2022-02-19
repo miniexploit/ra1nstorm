@@ -1,5 +1,4 @@
 import requests
-import json
 
 def get_keys(identifier, board, buildid):
 	f = requests.get(f"https://api.m1sta.xyz/wikiproxy/{identifier}/{board}/{buildid}").json()
@@ -10,4 +9,8 @@ def get_keys(identifier, board, buildid):
 		if dev['image'] == "iBEC":
 			iBEC_iv = dev['iv']
 			iBEC_key = dev['key']
-	return iBSS_iv, iBSS_key, iBEC_iv, iBEC_key
+	try:
+		return iBSS_iv, iBSS_key, iBEC_iv, iBEC_key
+	except UnboundLocalError:
+		print("[WARNING] Unable to get firmware keys, either the bootchain is not encrypted or the wikiproxy does not have the firmware keys.")
+		input("Continue or not? (Press ENTER to continue, Ctrl-C to quit)")
