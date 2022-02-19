@@ -16,6 +16,8 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
+  -t BLOB, --blob BLOB  Manually specify SHSH used for restoring (SHSH will be
+                        automatically saved if this argument is skipped
   -s PATH, --save-log PATH
                         Specify path for saving futurerestore log
   -u, --update          Keep data while restoring (Untested)
