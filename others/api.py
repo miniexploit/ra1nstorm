@@ -12,5 +12,5 @@ def get_keys(identifier, board, buildid):
 	try:
 		return iBSS_iv, iBSS_key, iBEC_iv, iBEC_key
 	except UnboundLocalError:
-		print("[WARNING] Unable to get firmware keys, either the bootchain is not encrypted or the wikiproxy does not have the firmware keys.")
+		print("[WARNING] Unable to get firmware keys, either the bootchain is not encrypted or the wikiproxy does not have it.")
 		input("Continue or not? (Press ENTER to continue, Ctrl-C to quit)")
