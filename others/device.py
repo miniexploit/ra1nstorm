@@ -12,10 +12,7 @@ class Device:
 
 	def get_device(self):
 		out = subprocess.run(('irecovery','-q'), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, universal_newlines=True).stdout
-			
 		for st in out.splitlines():
-			if "CPID" in st:
-				self.cpid = int(st.replace("CPID: 0x",""))
 			if "MODEL" in st:
 				self.board = st.replace("MODEL: ", "")
 			if "PRODUCT" in st:
@@ -36,7 +33,8 @@ class Device:
 		device = usb.core.find(idVendor=0x5AC, idProduct=0x1227)
 		retassure(device is not None, "A DFU device was not found. Exiting.")
 		print("Device info:", device.serial_number)
-		retassure(not any((8010 <= self.cpid <= 8015, self.cpid == 8960)), "Device is not supported. Exiting.")
+		self.cpid = [int(info.replace('CPID:','')) for info in device.serial_number.split(' ') if 'CPID' in info][0]
+		retassure(any((8010 <= self.cpid <= 8015, self.cpid == 8960)), "Device is not supported. Exiting.")
 		retassure("PWND:[" in device.serial_number, "Device's not in pwned DFU mode. Exiting.")
 	def check_bb(self):
 		cellular_ipads = [
