@@ -83,7 +83,7 @@ class Restore:
 		retassure(data['generator'] is not None, "Failed to read nonce generator from SHSH. Exiting.")
 		return data['generator']
 
-	def restore(self, ramdisk, kernelcache, update, custom_blob=None, log_path=None):
+	def restore(self, ibss, ibec, ramdisk, kernelcache, update, custom_blob=None, log_path=None):
 		print("Restoring device...")
 		if custom_blob:
 			args = [
@@ -93,6 +93,10 @@ class Restore:
 				'--skip-blob',
 				'--latest-sep',
 				'--use-pwndfu',
+				'-g',
+				ibss,
+				'-f',
+				ibec,
 				'--rdsk',
 				ramdisk,
 				'--rkrn',
@@ -106,6 +110,10 @@ class Restore:
 					'--skip-blob',
 					'--latest-sep',
 					'--use-pwndfu',
+					'--ibss-img4',
+					ibss,
+					'--ibec-img4',
+					ibec,
 					'--rdsk',
 					ramdisk,
 					'--rkrn',
