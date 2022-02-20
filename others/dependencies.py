@@ -18,6 +18,7 @@ class check_requirements:
 		self.check_bin('asr64_patcher')
 		print("Checking hard disk free space...")
 		self.check_space()
+		
 	def check_bin(self, binary):
 		retassure(shutil.which(binary) is not None, f"{binary} not found, make sure it's in PATH")
 		if binary == "irecovery":
@@ -29,7 +30,8 @@ class check_requirements:
 			retassure(int(irecv_ver[:-1].replace(".", "")) >= 101, f"Expected irecovery version to be greater than or equal to 1.0.1 but found version {irecv_ver}. Exiting.")
 		elif binary == "futurerestore":
 			fr_usage = subprocess.run((binary), stdout=subprocess.PIPE, universal_newlines=True).stdout
-			retassure(not any(("--rdsk" not in fr_usage, "--rkrn" not in fr_usage, "--skip-blob" not in fr_usage)), "This Futurerestore build does not allow specifying custom ramdisk and kernelcache. Exiting.")
+			retassure(not any(("--ibss-img4" not in fr_usage, "--ibec-img4" not in fr_usage, "--rdsk" not in fr_usage, "--rkrn" not in fr_usage, "--skip-blob" not in fr_usage)), "This Futurerestore build does not allow specifying custom ramdisk and kernelcache. Exiting.")
+
 	def check_space(self):
 		disk = psutil.disk_usage('/')
 		retassure(disk.free / (2**30) >= 3, "Less than 3GB free space on this computer. Exiting.")
