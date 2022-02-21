@@ -118,22 +118,20 @@ def main():
 			restore.save_im4m(f'{tmpdir}/im4m')
 		else:
 			restore.save_im4m(f'{tmpdir}/im4m', args.blob[0])
-		if not os.path.exists("/tmp/futurerestore"):
-			os.makedirs("/tmp/futurerestore")
-		restore.sign_bootloader(f'{tmpdir}/iBSS.patched',f'/tmp/futurerestore/ibss.{device.board}.{buildmanifest.get_buildid()}.patched.img4','iBSS')
-		restore.sign_bootloader(f'{tmpdir}/iBEC.patched',f'/tmp/futurerestore/ibec.{device.board}.{buildmanifest.get_buildid()}.patched.img4','iBEC')
+		restore.sign_bootloader(f'{tmpdir}/iBSS.patched',f'{tmpdir}/ibss.{device.board}.patched.img4','iBSS')
+		restore.sign_bootloader(f'{tmpdir}/iBEC.patched',f'{tmpdir}/ibec.{device.board}.patched.img4','iBEC')
 		if not args.blob:
 			restore.save_blobs(f'{tmpdir}/tempblobs', False)
 		if not args.blob:
 			if args.save_log:
-				restore.restore(f'/tmp/futurerestore/ibss.{device.board}.{buildmanifest.get_buildid()}.patched.img4', f'/tmp/futurerestore/ibec.{device.board}.{buildmanifest.get_buildid()}.patched.img4', f'{tmpdir}/ramdisk.im4p', f'{tmpdir}/kernelcache.im4p', args.update, log_path=args.save_log[0])
+				restore.restore(f'{tmpdir}/ibss.{device.board}.patched.img4', f'{tmpdir}/ibec.{device.board}.patched.img4', f'{tmpdir}/ramdisk.im4p', f'{tmpdir}/kernelcache.im4p', args.update, log_path=args.save_log[0])
 			else:
-				restore.restore(f'/tmp/futurerestore/ibss.{device.board}.{buildmanifest.get_buildid()}.patched.img4', f'/tmp/futurerestore/ibec.{device.board}.{buildmanifest.get_buildid()}.patched.img4', f"{tmpdir}/ramdisk.im4p", f'{tmpdir}/kernelcache.im4p', args.update)
+				restore.restore(f'{tmpdir}/ibss.{device.board}.patched.img4', f'{tmpdir}/ibec.{device.board}.patched.img4', f"{tmpdir}/ramdisk.im4p", f'{tmpdir}/kernelcache.im4p', args.update)
 		else:
 			if args.save_log:
-				restore.restore(f'/tmp/futurerestore/ibss.{device.board}.{buildmanifest.get_buildid()}.patched.img4', f'/tmp/futurerestore/ibec.{device.board}.{buildmanifest.get_buildid()}.patched.img4', f"{tmpdir}/ramdisk.im4p", f'{tmpdir}/kernelcache.im4p', args.update, custom_blob=args.blob[0], log_path=args.save_log[0])	
+				restore.restore(f'{tmpdir}/ibss.{device.board}.patched.img4', f'{tmpdir}/ibec.{device.board}.patched.img4', f"{tmpdir}/ramdisk.im4p", f'{tmpdir}/kernelcache.im4p', args.update, custom_blob=args.blob[0], log_path=args.save_log[0])	
 			else:
-				restore.restore(f'/tmp/futurerestore/ibss.{device.board}.{buildmanifest.get_buildid()}.patched.img4', f'/tmp/futurerestore/ibec.{device.board}.{buildmanifest.get_buildid()}.patched.img4', f"{tmpdir}/ramdisk.im4p", f'{tmpdir}/kernelcache.im4p', args.update, custom_blob=args.blob[0])
+				restore.restore(f'{tmpdir}/ibss.{device.board}.patched.img4', f'{tmpdir}/ibec.{device.board}.patched.img4', f"{tmpdir}/ramdisk.im4p", f'{tmpdir}/kernelcache.im4p', args.update, custom_blob=args.blob[0])
 
 if __name__ == '__main__':
 	main()
