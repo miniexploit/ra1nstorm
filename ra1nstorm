@@ -29,11 +29,11 @@ def patch_bootloader(path, type, device, buildid, tmpdir):
 		decrypt(path, iBSS_iv, iBSS_key, type, tmpdir)
 	if type == "iBEC":
 		decrypt(path, iBEC_iv, iBEC_key, type, tmpdir)
-	pargs = [
+	pargs = (
 		'Kairos',
 		f'{tmpdir}/{type}.dec',
 		f'{tmpdir}/{type}.patched'
-	]
+	)
 	if type == "iBEC":
 		pargs.append('-n')
 	patch = subprocess.run(pargs, stdout=subprocess.DEVNULL)
@@ -86,7 +86,7 @@ def main():
 	ipsw = IPSW(args.ipsw[0])
 	device = Device()
 	buildmanifest = Manifest(ipsw.read_file('BuildManifest.plist'))
-	ipsw.verify_ipsw_to_be_valid_for_connected_device(device.identifier, buildmanifest)
+	ipsw.verify_ipsw_to_be_valid_for_connected_device(device.identifier)
 	ipsw.get_ipswinfo(buildmanifest)
 	_ibss = buildmanifest.get_comp(device.board, 'iBSS')
 	_ibec = buildmanifest.get_comp(device.board, 'iBEC')
