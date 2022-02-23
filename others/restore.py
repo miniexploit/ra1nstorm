@@ -30,13 +30,13 @@ class Restore:
 		)
 		if apnonce:
 			args.append('--apnonce')
-			args.append(self.device.apnonce)
-		tsschecker = subprocess.run(args, stdout=subprocess.PIPE, universal_newlines=True)
-		retassure(tsschecker.returncode == 0, "Failed to save SHSH blobs. Exiting.")
+			args.append(self.device.apnonce) 
+		retassure(subprocess.run(args, stdout=subprocess.PIPE, universal_newlines=True).returncode == 0, "Failed to save SHSH blobs. Exiting.")
 		if '/apnonceblobs' in save_path:
 			self.apnonce_blob = glob.glob(f"{save_path}/*.shsh*")[0]
 		else:
 			self.blob = glob.glob(f"{save_path}/*.shsh*")[0]
+			
 	def sign_bootloader(self, path, output, type):
 		print(f"Signing {type}...")
 		args = (
@@ -51,8 +51,8 @@ class Restore:
 			'-T',
 			type.lower()
 		)
-		sign = subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-		retassure(sign.returncode == 0, "Failed to sign bootloader. Exiting.")
+		retassure(subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0, "Failed to sign bootloader. Exiting.")
+		
 	def save_im4m(self, output, custom_blob=None):
 		print("Saving IM4M for signing bootchain...")
 		if custom_blob:
@@ -73,15 +73,8 @@ class Restore:
 				'-m',
 				output
 			)
-		save_im4m = subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-		retassure(save_im4m.returncode == 0, "Failed to save IM4M. Exiting.")
+		retassure(subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0, "Failed to save IM4M. Exiting.")
 		self.im4m = output
-
-	def getGeneratorFromSHSH2(self):	# just put here, might be used in the future
-		with open(self.blob, 'rb') as f:
-			data = plistlib.loads(f.read())
-		retassure(data['generator'] is not None, "Failed to read nonce generator from SHSH. Exiting.")
-		return data('generator')
 
 	def restore(self, ibss, ibec, ramdisk, kernelcache, update, custom_blob=None, log_path=None):
 		print("Restoring device...")
