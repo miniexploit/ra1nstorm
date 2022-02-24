@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import time
 import subprocess
 import usb.core
 from others.error import retassure, reterror
@@ -11,6 +12,7 @@ class Device:
 		self.check_bb()
 
 	def get_device(self):
+		time.sleep(1)
 		out = subprocess.run(('irecovery','-q'), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, universal_newlines=True).stdout
 		for st in out.splitlines():
 			if "MODEL" in st:
