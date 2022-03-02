@@ -38,7 +38,7 @@ NOTE: Due to SEP limitation, you can only restore to an iOS version which its SE
 2. [img4tool](https://github.com/tihmstar/img4tool)
 3. [img4](https://github.com/xerub/img4lib) (img4lib)
 4. [kairos](https://github.com/dayt0n/kairos)
-5. [irecovery](https://github.com/libimobiledevice/libirecovery) (irecovery version must be >= 1.0.1)
+5. [irecovery(fork)](https://github.com/libimobiledevice/libirecovery) (irecovery version must be >= 1.0.1)
 6. [Kernel64Patcher](https://github.com/Ralph0045/Kernel64Patcher)
 7. [asr64_patcher](https://github.com/exploit3dguy/asr64_patcher)
 8. [tsschecker](https://github.com/1Conan/tsschecker)
