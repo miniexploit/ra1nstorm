@@ -18,17 +18,38 @@ import argparse
 import time
 import pathlib
 
-def decrypt(path, iv, key, type, tmpdir):
-	dec = subprocess.run(('img4','-i', path , '-o', f'{tmpdir}/{type}.dec','-k',f'{iv}{key}'), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-	retassure(dec.returncode == 0, f"Failed to decrypt {type}. Exiting.")
+def decrypt(path, iv, key, type, tmpdir, no_key=None):
+	dargs = (
+		'img4',
+		'-i',
+		path,
+		'-o',
+		f'{tmpdir}/{type}.dec'
+	)
+	if not no_key:
+		dargs.append('-k')
+		dargs.append(f'{iv}{key}')
+	retassure(subprocess.run(dargs, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0, f"Failed to decrypt {type}. Exiting.")
 
 def patch_bootloader(path, type, device, buildid, tmpdir):
 	print(f"Patching {type}...")
-	iBSS_iv, iBSS_key, iBEC_iv, iBEC_key = api.get_keys(device.identifier, device.board, buildid)
-	if type == "iBSS":
-		decrypt(path, iBSS_iv, iBSS_key, type, tmpdir)
-	if type == "iBEC":
-		decrypt(path, iBEC_iv, iBEC_key, type, tmpdir)
+	try:
+		iBSS_iv, iBSS_key, iBEC_iv, iBEC_key = api.get_keys(device.identifier, device.board, buildid)
+		no_key = False
+	except TypeError:
+		no_key = True
+	if not no_key:
+		if type == "iBSS":
+			decrypt(path, iBSS_iv, iBSS_key, type, tmpdir)
+		if type == "iBEC":
+			decrypt(path, iBEC_iv, iBEC_key, type, tmpdir)
+	else:
+		if type == "iBSS":
+			decrypt(path, None, None, type, tmpdir, no_key)
+		if type == "iBEC":
+			decrypt(path, None, None, type, tmpdir, no_key)
+
+
 	pargs = (
 		'Kairos',
 		f'{tmpdir}/{type}.dec',
