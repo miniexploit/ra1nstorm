@@ -18,7 +18,7 @@ import argparse
 import time
 import pathlib
 
-def decrypt(path, iv, key, type, tmpdir, no_key=None):
+def decrypt(path, type, tmpdir, iv=None, key=None):
 	dargs = (
 		'img4',
 		'-i',
@@ -26,7 +26,7 @@ def decrypt(path, iv, key, type, tmpdir, no_key=None):
 		'-o',
 		f'{tmpdir}/{type}.dec'
 	)
-	if not no_key:
+	if iv and key:
 		dargs.append('-k')
 		dargs.append(f'{iv}{key}')
 	retassure(subprocess.run(dargs, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0, f"Failed to decrypt {type}. Exiting.")
@@ -40,14 +40,14 @@ def patch_bootloader(path, type, device, buildid, tmpdir):
 		no_key = True
 	if not no_key:
 		if type == "iBSS":
-			decrypt(path, iBSS_iv, iBSS_key, type, tmpdir)
+			decrypt(path, type, tmpdir, iBSS_iv, iBSS_key)
 		if type == "iBEC":
-			decrypt(path, iBEC_iv, iBEC_key, type, tmpdir)
+			decrypt(path, type, tmpdir, iBEC_iv, iBEC_key)
 	else:
 		if type == "iBSS":
-			decrypt(path, None, None, type, tmpdir, no_key)
+			decrypt(path, type, tmpdir)
 		if type == "iBEC":
-			decrypt(path, None, None, type, tmpdir, no_key)
+			decrypt(path, type, tmpdir)
 
 
 	pargs = (
