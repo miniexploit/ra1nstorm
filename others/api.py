@@ -1,4 +1,5 @@
 import requests
+from remotezip import RemoteZip
 
 def get_keys(identifier, board, buildid):
 	f = requests.get(f"https://api.m1sta.xyz/wikiproxy/{identifier}/{board}/{buildid}").json()
@@ -14,3 +15,9 @@ def get_keys(identifier, board, buildid):
 	except UnboundLocalError:
 		print("[WARNING] Unable to get firmware keys, either the bootchain is not encrypted or the wikiproxy does not have it.")
 		input("Continue or not? (Press ENTER to continue, Ctrl-C to quit)")
+
+def partialzip_download(url, file, dest):
+	with RemoteZip(url) as zip:
+		data = zip.read(file)
+	with open(dest, 'rb') as f:
+		f.write(data)
