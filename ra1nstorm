@@ -20,13 +20,13 @@ import time
 os.chdir(os.path.dirname(sys.argv[0]))
 
 def decrypt(path, type, tmpdir, iv=None, key=None):
-	dargs = (
+	dargs = [
 		'img4',
 		'-i',
 		path,
 		'-o',
 		f'{tmpdir}/{type}.dec'
-	)
+	]
 	if iv and key:
 		dargs.append('-k')
 		dargs.append(f'{iv}{key}')
@@ -51,11 +51,11 @@ def patch_bootloader(path, type, device, buildid, tmpdir):
 			decrypt(path, type, tmpdir)
 
 
-	pargs = (
+	pargs = [
 		'Kairos',
 		f'{tmpdir}/{type}.dec',
 		f'{tmpdir}/{type}.patched'
-	)
+	]
 	if type == "iBEC":
 		pargs.append('-n')
 	patch = subprocess.run(pargs, stdout=subprocess.DEVNULL)
