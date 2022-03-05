@@ -14,7 +14,7 @@ class Restore:
 			print("Saving temporary SHSH for signing bootchain...")
 		else:
 			print("Saving temporary SHSH for restoring...")
-		args = (
+		args = [
 			'tsschecker',
 			'-d',
 			self.device.identifier,
@@ -27,7 +27,7 @@ class Restore:
 			'--save-path',
 			save_path,
 			'--nocache',
-		)
+		]
 		if apnonce:
 			args.append('--apnonce')
 			args.append(self.device.apnonce) 
@@ -39,7 +39,7 @@ class Restore:
 			
 	def sign_bootloader(self, path, output, type):
 		print(f"Signing {type}...")
-		args = (
+		args = [
 			'img4',
 			'-i',
 			path,
@@ -50,36 +50,36 @@ class Restore:
 			'-A',
 			'-T',
 			type.lower()
-		)
+		]
 		retassure(subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0, "Failed to sign bootloader. Exiting.")
 		
 	def save_im4m(self, output, custom_blob=None):
 		print("Saving IM4M for signing bootchain...")
 		if custom_blob:
-			args = (
+			args = [
 				'img4tool',
 				'-e',
 				'-s',
 				custom_blob,
 				'-m',
 				output
-			)
+			]
 		else:
-			args = (
+			args = [
 				'img4tool',
 				'-e',
 				'-s',
 				self.apnonce_blob,
 				'-m',
 				output
-			)
+			]
 		retassure(subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0, "Failed to save IM4M. Exiting.")
 		self.im4m = output
 
 	def restore(self, ibss, ibec, ramdisk, kernelcache, update, custom_blob=None, log_path=None):
 		print("Restoring device...")
 		if custom_blob:
-			args = (
+			args = [
 				'futurerestore',
 				'-t',
 				custom_blob,
@@ -94,9 +94,9 @@ class Restore:
 				ramdisk,
 				'--rkrn',
 				kernelcache
-			)	
+			]	
 		else:	
-			args = (
+			args = [
 					'futurerestore',
 					'-t',
 					self.blob,
@@ -111,7 +111,7 @@ class Restore:
 					ramdisk,
 					'--rkrn',
 					kernelcache
-				)
+				]
 		if self.device.baseband:
 			args.append('--latest-baseband')
 		else:
