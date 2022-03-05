@@ -19,6 +19,12 @@ import time
 
 os.chdir(os.path.dirname(sys.argv[0]))
 
+def download_ramdisk_components(tmpdir):
+	print("Downloading ramdisk components...")
+	# TOO BAD: not good enough to make a tool to patch libimg4 so have to use an existed patched one
+	api.partialzip_download('https://drive.google.com/uc?export=download&id=1FHm3R7WgGpOcT_-o8w7fJ-MXz5NQ2l99', 'ra1nstorm-stuff/libimg4.dylib', f'{tmpdir}/libimg4.dylib')
+	api.partialzip_download('https://drive.google.com/uc?export=download&id=1FHm3R7WgGpOcT_-o8w7fJ-MXz5NQ2l99', 'ra1nstorm-stuff/signcert.p12', f'{tmpdir}/signcert.p12')
+
 def decrypt(path, type, tmpdir, iv=None, key=None):
 	dargs = [
 		'img4',
@@ -72,8 +78,10 @@ def patch_kernel(kernelcache, kernelorg, output, tmpdir):
 def patch_ramdisk(ramdisk, output, tmpdir):
 	print("Patching ramdisk...")
 	os.makedirs(f"{tmpdir}/rdsk_mnpt")
+	# Attach ramdisk to the mountpoint
 	attach_rdsk = subprocess.run(('hdiutil','attach', ramdisk, '-mountpoint',f'{tmpdir}/rdsk_mnpt'), stdout=subprocess.DEVNULL)
 	retassure(attach_rdsk.returncode == 0, "Failed to mount ramdisk. Exiting.")
+	# Patch asr
 	shutil.move(f'{tmpdir}/rdsk_mnpt/usr/sbin/asr', f'{tmpdir}/asr.extracted')
 	asr64 = subprocess.run(('asr64_patcher',f'{tmpdir}/asr.extracted',f'{tmpdir}/patched_asr'), stdout=subprocess.DEVNULL)
 	retassure(asr64.returncode == 0, "Failed to patch asr. Exiting.")
@@ -81,12 +89,16 @@ def patch_ramdisk(ramdisk, output, tmpdir):
 	retassure(ents.returncode == 0, "Failed to extract ASR entitlements. Exiting.")
 	with open(f'{tmpdir}/asr.xml', 'w') as f:
 		f.write(ents.stdout)
-	# TODO: Patch libimg4
-	sign_asr = subprocess.run(('ldid','-Cadhoc','-Kothers/signcert.p12',f'-S{tmpdir}/asr.xml',f'{tmpdir}/patched_asr'), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) # Thanks Cryptic
+	sign_asr = subprocess.run(('ldid','-Cadhoc',f'-K{tmpdir}/signcert.p12',f'-S{tmpdir}/asr.xml',f'{tmpdir}/patched_asr'), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) # Thanks Cryptic
 	retassure(sign_asr.returncode == 0, "Failed to sign patched ASR. Exiting.")
 	os.chmod(f'{tmpdir}/patched_asr', 0o755)
 	shutil.move(f'{tmpdir}/patched_asr', f'{tmpdir}/rdsk_mnpt/usr/sbin/asr')
 	time.sleep(3)
+	# Place patched libimg4 into ramdisk
+	os.remove(f'{tmpdir}/rdsk_mnpt/usr/lib/libimg4.dylib')
+	shutil.move(f'{tmpdir}/libimg4.dylib', f'{tmpdir}/rdsk_mnpt/usr/lib/libimg4.dylib')
+	time.sleep(3)
+	# Detach ramdisk
 	detach = subprocess.run(('hdiutil','detach',f'{tmpdir}/rdsk_mnpt'), stdout=subprocess.DEVNULL)
 	retassure(detach.returncode == 0, "Failed to ummount ramdisk. Exiting.")
 	os.rmdir(f"{tmpdir}/rdsk_mnpt")
