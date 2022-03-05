@@ -94,7 +94,7 @@ def patch_ramdisk(ramdisk, output, tmpdir):
 	retassure(pack_rdsk.returncode == 0, "Failed to pack ramdisk. Exiting.")
 
 def main():
-	parser = argparse.ArgumentParser(description='ra1nstorm - Tethered downgrade 64-bit iDevices vulnerable to checkm8', usage="ra1nstorm iPSW [-u]")
+	parser = argparse.ArgumentParser(description='ra1nstorm - Tethered downgrade 64-bit iDevices vulnerable to checkm8', usage="ra1nstorm iPSW [-u] [-s PATH] [-t BLOB]")
 	parser.add_argument('-t','--blob',nargs=1, metavar='BLOB', help='Manually specify SHSH used for restoring (SHSH will be automatically saved if this argument is skipped)')
 	parser.add_argument('ipsw', metavar='iPSW', nargs=1, help='iPSW file used for restoring')
 	parser.add_argument('-s','--save-log',nargs=1, metavar='PATH', help='Specify path for saving futurerestore log')
