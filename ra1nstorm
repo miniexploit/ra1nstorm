@@ -16,7 +16,8 @@ from others.device import Device
 from others import device, api
 import argparse
 import time
-import pathlib
+
+os.chdir(os.path.dirname(sys.argv[0]))
 
 def decrypt(path, type, tmpdir, iv=None, key=None):
 	dargs = (
@@ -99,7 +100,6 @@ def main():
 	parser.add_argument('-s','--save-log',nargs=1, metavar='PATH', help='Specify path for saving futurerestore log')
 	parser.add_argument('-u', '--update', help='Keep data while restoring (Untested)', action='store_true')
 	args = parser.parse_args()
-	os.chdir(pathlib.Path().resolve())
 	if args.save_log:
 		retassure(os.path.isdir(args.save_log[0]), "Provided path to save log is not a directory. Exiting.")
 
