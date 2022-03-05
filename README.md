@@ -48,7 +48,10 @@ After downloading the binaries above, you have to move them to PATH (e.g. ```/us
 * [Python3](https://www.python.org/downloads/)
 * Install ra1nstorm requirements: ```pip3 install -r requirements.txt```
 ## Issue
-Feel free to open an issue if you need support/report a bug
+There are 2 ways for you to get support:
+1. Open an issue
+2. [Join my Discord server](https://discord.gg/nK3Uu6BaDN) 
+
 ## Credits
 * Special thanks to [m1stadev](https://github.com/m1stadev) for wikiproxy and buildmanifest parser
 * [mcg29](https://github.com/mcg29) for [kerneldiff](https://github.com/mcg29/kerneldiff)
