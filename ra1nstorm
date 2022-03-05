@@ -155,7 +155,12 @@ def main():
 				restore.restore(f'{tmpdir}/ibss.{device.board}.patched.img4', f'{tmpdir}/ibec.{device.board}.patched.img4', f"{tmpdir}/ramdisk.im4p", f'{tmpdir}/kernelcache.im4p', args.update, custom_blob=args.blob[0])
 
 if __name__ == '__main__':
-	main()
+	try:
+		main()
+	except Exception as e:
+		print("ra1nstorm failed with exception:")
+		print(f"[exception]:")
+		print(f"what={e}")
 
 
 
