@@ -121,7 +121,7 @@ class Restore:
 		args.append(self.ipsw)
 		if log_path:
 			if log_path.endswith('/'):
-				log_path = log_path(:-1)
+				log_path = log_path[:-1]
 			froutput = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf8").stdout
 			with open(f'{log_path}/restore.log', 'w') as f:
 				f.write(froutput)
