@@ -139,6 +139,7 @@ def main():
 		ipsw.extract_file(kernelcache ,f"{tmpdir}/kernelcache.release.extracted")
 		unpack_krnl = subprocess.run(('img4','-i',f"{tmpdir}/kernelcache.release.extracted",'-o',f"{tmpdir}/kcache.raw"), stdout=subprocess.DEVNULL)
 		retassure(unpack_krnl.returncode == 0, "Failed to unpack kernelcache. Exiting.")
+		download_ramdisk_components(tmpdir)
 		patch_ramdisk(f'{tmpdir}/ramdisk.dmg', f'{tmpdir}/ramdisk.im4p', tmpdir)
 		patch_kernel(f'{tmpdir}/kcache.raw', f'{tmpdir}/kernelcache.release.extracted', f'{tmpdir}/kernelcache.im4p', tmpdir)
 		restore = Restore(device, args.ipsw[0])
