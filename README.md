@@ -7,7 +7,7 @@ Since the purpose of this tool is to tethered downgrade a device, after restorin
 * [ra1nsn0w](https://github.com/tihmstar/ra1nsn0w)
 ## Usage
 ```
-usage: ra1nstorm iPSW [-u]
+usage: ra1nstorm iPSW [-u] [-s PATH] [-t BLOB]
 
 ra1nstorm - Tethered downgrade 64-bit iDevices vulnerable to checkm8
 
