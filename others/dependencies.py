@@ -27,7 +27,7 @@ class check_requirements:
 			except subprocess.CalledProcessError:
 				reterror("This irecovery version is too old. Exiting.")
 			irecv_ver = subprocess.run((binary, '-V'), stdout=subprocess.PIPE, universal_newlines=True).stdout # double check
-			retassure("fork" in irecv_ver, "irecovery can't be used with ra1nstorm")
+			retassure("fork" in irecv_ver, "Your irecovery can't be used with ra1nstorm")
 		elif binary == "futurerestore":
 			fr_usage = subprocess.run((binary), stdout=subprocess.PIPE, universal_newlines=True).stdout
 			retassure(not any(("--ibss-img4" not in fr_usage, "--ibec-img4" not in fr_usage, "--rdsk" not in fr_usage, "--rkrn" not in fr_usage, "--skip-blob" not in fr_usage)), "This Futurerestore build does not allow specifying custom ramdisk and kernelcache. Exiting.")
