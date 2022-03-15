@@ -101,8 +101,8 @@ def main():
 		retassure(os.path.isdir(args.save_log[0]), "Provided path to save log is not a directory")
 
 	check_requirements()
-	ipsw = IPSW(args.ipsw[0])
 	device = Device()
+	ipsw = IPSW(args.ipsw[0])
 	buildmanifest = Manifest(ipsw.read_file('BuildManifest.plist'))
 	ipsw.verify_ipsw_to_be_valid_for_connected_device(device.identifier)
 	ipsw.get_ipswinfo(buildmanifest)
@@ -132,14 +132,12 @@ def main():
 		if not os.path.exists(f'{tmpdir}/apnonceblobs'):
 			os.makedirs(f'{tmpdir}/apnonceblobs')
 		if not args.blob:
-			restore.save_blobs(f'{tmpdir}/apnonceblobs', True)
+			restore.save_blobs(f'{tmpdir}/tempblobs')
 			restore.save_im4m(f'{tmpdir}/im4m')
 		else:
 			restore.save_im4m(f'{tmpdir}/im4m', args.blob[0])
 		restore.sign_bootloader(f'{tmpdir}/iBSS.patched',f'{tmpdir}/ibss.{device.board}.patched.img4','iBSS')
 		restore.sign_bootloader(f'{tmpdir}/iBEC.patched',f'{tmpdir}/ibec.{device.board}.patched.img4','iBEC')
-		if not args.blob:
-			restore.save_blobs(f'{tmpdir}/tempblobs', False)
 		if not args.blob:
 			if args.save_log:
 				restore.restore(f'{tmpdir}/ibss.{device.board}.patched.img4', f'{tmpdir}/ibec.{device.board}.patched.img4', f'{tmpdir}/ramdisk.im4p', f'{tmpdir}/kernelcache.im4p', args.update, log_path=args.save_log[0])
