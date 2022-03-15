@@ -4,33 +4,35 @@ import time
 import subprocess
 import usb.core
 from others.error import retassure, reterror
+from others.irecv_devices_struct import irecv_device, irecv_devices
+
 
 class Device:
 	def __init__(self):
-		self.detect_device()
+		self.cpid = None
+		self.bdid = None
+		self.ecid = None
+		self.identifier = None
+		self.board = None
 		self.get_device()
+		retassure(not any((self.cpid is None, self.bdid is None, self.ecid is None, self.identifier is None, self.board is None)), "Could not get device info")
 		self.check_bb()
 
 	def get_device(self):
-		time.sleep(1)
-		out = subprocess.run(('irecovery','-q'), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, universal_newlines=True).stdout
-		for st in out.splitlines():
-			if "MODEL" in st:
-				self.board = st.replace("MODEL: ", "")
-			if "PRODUCT" in st:
-				self.identifier = st.replace("PRODUCT: ", "")
-			if "ECID" in st:
-				self.ecid = st.replace("ECID: ", "")
-			if "NONC" in st:
-				self.apnonce = st.replace("NONC: ","")
-				
-	def detect_device(self):
 		device = usb.core.find(idVendor=0x5AC, idProduct=0x1227)
-		retassure(device is not None, "A DFU device was not found. Exiting.")
+		retassure(device is not None, "No DFU device found")
 		print("Device info:", device.serial_number)
 		self.cpid = [int(info.replace('CPID:','')) for info in device.serial_number.split(' ') if 'CPID' in info][0]
-		retassure(any((8010 <= self.cpid <= 8015, self.cpid == 8960)), "Device is not supported. Exiting.")
-		retassure("PWND:[" in device.serial_number, "Device's not in pwned DFU mode. Exiting.")
+		self.bdid = [int(info.replace('BDID:','')) for info in device.serial_number.split(' ') if 'BDID' in info][0]
+		self.ecid = [info.replace('ECID:','') for info in device.serial_number.split(' ') if 'ECID' in info][0]
+		retassure(any((8010 <= self.cpid <= 8015, self.cpid == 8960)), "Device is not supported")
+		retassure("PWND:[" in device.serial_number, "Device's not in pwned DFU mode")
+		for device in irecv_devices:
+			if device.cpid == self.cpid and device.bdid == self.bdid:
+				self.identifier = device.product_type
+				self.board = device.hardware_model
+				break
+		
 	def check_bb(self):
 		cellular_ipads = [
 				'iPad4,2',
