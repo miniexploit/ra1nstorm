@@ -5,6 +5,8 @@ Since the purpose of this tool is to tethered downgrade a device, after restorin
 * [Ramiel](https://github.com/MatthewPierson/Ramiel)
 * [PyBoot](https://github.com/MatthewPierson/PyBoot)
 * [ra1nsn0w](https://github.com/tihmstar/ra1nsn0w)
+## Before using it, please keep in mind
+YOU are fully responsible to any data loss or damaged cause to your device while using ra1nstorm
 ## Usage
 ```
 usage: ra1nstorm iPSW [-u] [-s PATH] [-t BLOB]
