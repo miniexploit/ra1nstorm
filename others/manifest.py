@@ -12,7 +12,4 @@ class Manifest:
 	def get_comp(self, board, comp):
 		for deviceclass in self.manifest['BuildIdentities']:
 			if deviceclass['Info']['DeviceClass'] == board:	
-				devclass = deviceclass
-				break
-		return devclass['Manifest'][comp]['Info']['Path']
-
+				return deviceclass['Manifest'][comp]['Info']['Path']
