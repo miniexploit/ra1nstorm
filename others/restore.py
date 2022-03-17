@@ -4,10 +4,19 @@ import glob
 import time
 from others.error import retassure
 
+class RestoreBootchain:
+	def __init__(self, ibss, ibec, ramdisk, kernelcache):
+		self.ibss = ibss
+		self.ibec = ibec
+		self.ramdisk = ramdisk
+		self.kernelcache = kernelcache
+
 class Restore:
-	def __init__(self, device_struct, ipsw):
+	def __init__(self, device_struct, bootchain, ipsw, update):
 		self.device = device_struct
+		self.bootchain = bootchain
 		self.ipsw = ipsw
+		self.update = update
 
 	def save_blobs(self, save_path):
 		print("Saving temporary SHSH...")
@@ -67,7 +76,7 @@ class Restore:
 		retassure(subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0, "Failed to save IM4M")
 		self.im4m = output
 
-	def restore(self, ibss, ibec, ramdisk, kernelcache, update, custom_blob=None, log_path=None):
+	def restore(self, custom_blob=None, log_path=None):
 		print("Restoring device...")
 		if custom_blob:
 			args = [
@@ -77,14 +86,14 @@ class Restore:
 				'--skip-blob',
 				'--latest-sep',
 				'--use-pwndfu',
-				'-g',
-				ibss,
-				'-f',
-				ibec,
+				'--ibss-img4',
+				self.bootchain.ibss,
+				'--ibec-img4',
+				self.bootchain.ibec,
 				'--rdsk',
-				ramdisk,
+				self.bootchain.ramdisk,
 				'--rkrn',
-				kernelcache
+				self.bootchain.kernelcache
 			]	
 		else:	
 			args = [
@@ -95,19 +104,19 @@ class Restore:
 					'--latest-sep',
 					'--use-pwndfu',
 					'--ibss-img4',
-					ibss,
+					self.bootchain.ibss,
 					'--ibec-img4',
-					ibec,
+					self.bootchain.ibec,
 					'--rdsk',
-					ramdisk,
+					self.bootchain.ramdisk,
 					'--rkrn',
-					kernelcache
+					self.bootchain.kernelcache
 				]
 		if self.device.baseband:
 			args.append('--latest-baseband')
 		else:
 			args.append('--no-baseband')
-		if update:
+		if self.update:
 			args.append('-u')
 		args.append(self.ipsw)
 		if log_path:
