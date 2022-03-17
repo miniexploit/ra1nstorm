@@ -128,8 +128,8 @@ def main():
 		patch_kernel(f'{tmpdir}/kcache.raw', f'{tmpdir}/kernelcache.release.extracted', f'{tmpdir}/kernelcache.im4p', tmpdir)
 
 		bootchain = RestoreBootchain(
-			f'{tmpdir}/ibss.{device.board}.patched.img4', 
-			f'{tmpdir}/ibec.{device.board}.patched.img4', 
+			f'{tmpdir}/ibss.{device.board}.patched.img4', # This path hasn't existed yet since we haven't signed the bootloaders.
+			f'{tmpdir}/ibec.{device.board}.patched.img4', # However, it will be saved before it's passed to futurerestore
 			f'{tmpdir}/ramdisk.im4p', 
 			f'{tmpdir}/kernelcache.im4p'
 		)
