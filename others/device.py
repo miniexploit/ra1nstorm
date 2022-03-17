@@ -23,7 +23,7 @@ class Device:
 		retassure(device is not None, "No DFU device found")
 		print("Device info:", device.serial_number)
 		self.cpid = [int(info.replace('CPID:','')) for info in device.serial_number.split(' ') if 'CPID' in info][0]
-		self.bdid = [int(info.replace('BDID:','')) for info in device.serial_number.split(' ') if 'BDID' in info][0]
+		self.bdid = [int(info.replace('BDID:',''), 16) for info in device.serial_number.split(' ') if 'BDID' in info][0]
 		self.ecid = [info.replace('ECID:','') for info in device.serial_number.split(' ') if 'ECID' in info][0]
 		retassure(any((8010 <= self.cpid <= 8015, self.cpid == 8960)), "Device is not supported")
 		retassure("PWND:[" in device.serial_number, "Device's not in pwned DFU mode")
