@@ -8,7 +8,7 @@ from tempfile import TemporaryDirectory
 import subprocess
 from others.ipsw import IPSW
 from others.manifest import Manifest
-from others.restore import Restore
+from others.restore import Restore, RestoreBootchain
 from others.dependencies import check_requirements
 from others.kerneldiff import diff_kernel
 from others.error import *
@@ -82,6 +82,15 @@ def patch_ramdisk(ramdisk, output, tmpdir):
 	# Place patched libimg4 into ramdisk
 	os.remove(f'{tmpdir}/rdsk_mnpt/usr/lib/libimg4.dylib')
 	shutil.copyfile('others/libimg4.dylib', f'{tmpdir}/rdsk_mnpt/usr/lib/libimg4.dylib')
+	
+	with open(f'{tmpdir}/libimg4.hex','r') as f:
+		hexdata = f.read()
+	for line in hexdata.splitlines():
+		if "b1b0" in line:
+			line.replace("c0 00 80 52", "00 00 80 52")
+			break
+	with open(f'{tmpdir}/libimg4.hex','w') as fw:
+		fw.write(hexdata)
 	time.sleep(3)
 	# Detach ramdisk
 	detach = subprocess.run(('hdiutil','detach',f'{tmpdir}/rdsk_mnpt'), stdout=subprocess.DEVNULL)
@@ -126,7 +135,15 @@ def main():
 		retassure(unpack_krnl.returncode == 0, "Failed to unpack kernelcache")
 		patch_ramdisk(f'{tmpdir}/ramdisk.dmg', f'{tmpdir}/ramdisk.im4p', tmpdir)
 		patch_kernel(f'{tmpdir}/kcache.raw', f'{tmpdir}/kernelcache.release.extracted', f'{tmpdir}/kernelcache.im4p', tmpdir)
-		restore = Restore(device, args.ipsw[0])
+
+		bootchain = RestoreBootchain(
+			f'{tmpdir}/ibss.{device.board}.patched.img4', 
+			f'{tmpdir}/ibec.{device.board}.patched.img4', 
+			f'{tmpdir}/ramdisk.im4p', 
+			f'{tmpdir}/kernelcache.im4p'
+		)
+
+		restore = Restore(device, bootchain, args.ipsw[0], args.update)
 		if not os.path.exists(f"{tmpdir}/tempblobs"):
 			os.makedirs(f'{tmpdir}/tempblobs')
 		if not os.path.exists(f'{tmpdir}/apnonceblobs'):
@@ -140,14 +157,14 @@ def main():
 		restore.sign_bootloader(f'{tmpdir}/iBEC.patched',f'{tmpdir}/ibec.{device.board}.patched.img4','iBEC')
 		if not args.blob:
 			if args.save_log:
-				restore.restore(f'{tmpdir}/ibss.{device.board}.patched.img4', f'{tmpdir}/ibec.{device.board}.patched.img4', f'{tmpdir}/ramdisk.im4p', f'{tmpdir}/kernelcache.im4p', args.update, log_path=args.save_log[0])
+				restore.restore(log_path=args.save_log[0])
 			else:
-				restore.restore(f'{tmpdir}/ibss.{device.board}.patched.img4', f'{tmpdir}/ibec.{device.board}.patched.img4', f"{tmpdir}/ramdisk.im4p", f'{tmpdir}/kernelcache.im4p', args.update)
+				restore.restore()
 		else:
 			if args.save_log:
-				restore.restore(f'{tmpdir}/ibss.{device.board}.patched.img4', f'{tmpdir}/ibec.{device.board}.patched.img4', f"{tmpdir}/ramdisk.im4p", f'{tmpdir}/kernelcache.im4p', args.update, custom_blob=args.blob[0], log_path=args.save_log[0])	
+				restore.restore(custom_blob=args.blob[0], log_path=args.save_log[0])	
 			else:
-				restore.restore(f'{tmpdir}/ibss.{device.board}.patched.img4', f'{tmpdir}/ibec.{device.board}.patched.img4', f"{tmpdir}/ramdisk.im4p", f'{tmpdir}/kernelcache.im4p', args.update, custom_blob=args.blob[0])
+				restore.restore(custom_blob=args.blob[0])
 
 if __name__ == '__main__':
 	try:
