@@ -82,15 +82,6 @@ def patch_ramdisk(ramdisk, output, tmpdir):
 	# Place patched libimg4 into ramdisk
 	os.remove(f'{tmpdir}/rdsk_mnpt/usr/lib/libimg4.dylib')
 	shutil.copyfile('others/libimg4.dylib', f'{tmpdir}/rdsk_mnpt/usr/lib/libimg4.dylib')
-	
-	with open(f'{tmpdir}/libimg4.hex','r') as f:
-		hexdata = f.read()
-	for line in hexdata.splitlines():
-		if "b1b0" in line:
-			line.replace("c0 00 80 52", "00 00 80 52")
-			break
-	with open(f'{tmpdir}/libimg4.hex','w') as fw:
-		fw.write(hexdata)
 	time.sleep(3)
 	# Detach ramdisk
 	detach = subprocess.run(('hdiutil','detach',f'{tmpdir}/rdsk_mnpt'), stdout=subprocess.DEVNULL)
