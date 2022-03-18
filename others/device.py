@@ -22,6 +22,7 @@ class Device:
 		device = usb.core.find(idVendor=0x5AC, idProduct=0x1227)
 		retassure(device is not None, "No DFU device found")
 		print("Device info:", device.serial_number)
+		retassure("PWND:[" in device.serial_number, "Device is not in pwned DFU mode")
 		self.cpid = [int(info.replace('CPID:','')) for info in device.serial_number.split(' ') if 'CPID' in info][0]
 		self.bdid = [int(info.replace('BDID:',''), 16) for info in device.serial_number.split(' ') if 'BDID' in info][0]
 		self.ecid = [info.replace('ECID:','') for info in device.serial_number.split(' ') if 'ECID' in info][0]
