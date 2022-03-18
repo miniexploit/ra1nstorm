@@ -128,4 +128,5 @@ class Restore:
 			retassure(result.returncode == 0, f'Restore failed ({result.returncode}). Log saved to {log_path}/restore.log')
 			print(f'Restore succeeded! Log saved to {log_path}/restore.log')
 		else:
-			retasssure(subbprocess.run(args, universal_newlines=True).returncode == 0, f'Restore failed ({result.returncode})')
+			result = subbprocess.run(args, universal_newlines=True)
+			retasssure(result.returncode == 0, f'Restore failed ({result.returncode})')
