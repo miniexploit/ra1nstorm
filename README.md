@@ -26,6 +26,7 @@ optional arguments:
 ```
 ## Supported version
 All iOS versions from iOS 11 - iOS 14 are supported
+
 NOTE: Due to SEP limitation, you can only restore to an iOS version which its SEP firmware is still being signed
 ## Success
 |  Device   |  From  |   To   |
