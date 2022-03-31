@@ -32,7 +32,7 @@ def decrypt(path, type, tmpdir, iv=None, key=None):
 		dargs.append(f'{iv}{key}')
 	retassure(subprocess.run(dargs, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0, f"Failed to decrypt {type}")
 
-def patch_bootloader(path, type, device, buildid, tmpdir):
+def patch_bootloader(path, type, device, buildid, version, tmpdir):
 	print(f"Patching {type}...")
 	try:
 		iBSS_iv, iBSS_key, iBEC_iv, iBEC_key = api.get_keys(device.identifier, device.board, buildid)
@@ -49,15 +49,15 @@ def patch_bootloader(path, type, device, buildid, tmpdir):
 			decrypt(path, type, tmpdir)
 		if type == "iBEC":
 			decrypt(path, type, tmpdir)
-
-	retassure(subprocess.run(('kairos',f'{tmpdir}/{type}.dec',f'{tmpdir}/{type}.patched','-n'), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0, f"Failed to patch {type}")
+	patcher = "kairos" if version >= 13 else "iBoot64Patcher"
+	retassure(subprocess.run((patcher,f'{tmpdir}/{type}.dec',f'{tmpdir}/{type}.patched','-n'), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0, f"Failed to patch {type}")
 
 def patch_kernel(kernelcache, kernelorg, output, tmpdir):
 	print("Patching kernelcache...")
 	patch_kcache = subprocess.run(('Kernel64Patcher',kernelcache,f'{tmpdir}/kcache.patched','-a'), stdout=subprocess.DEVNULL)
 	retassure(patch_kcache.returncode == 0, "Failed to patch kernelcache AMFI")
 	diff_kernel(kernelcache, f'{tmpdir}/kcache.patched', f"{tmpdir}/kcache.diff")
-	pack_krnl = subprocess.run(('img4','-i',kernelorg,'-o',output,'-T','rkrn','-P', f"{tmpdir}/kcache.diff"), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+	pack_krnl = subprocess.run(('img4','-i',kernelorg,'-o',output,'-T','rkrn','-P', f'{tmpdir}/kcache.diff'), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 	retassure(pack_krnl.returncode == 0, "Failed to pack kernelcache")
 
 def patch_ramdisk(ramdisk, output, tmpdir):
@@ -104,7 +104,7 @@ def main():
 	device = Device()
 	ipsw = IPSW(args.ipsw[0])
 	buildmanifest = Manifest(ipsw.read_file('BuildManifest.plist'))
-	ipsw.verify_ipsw_to_be_valid_for_connected_device(device.identifier)
+	retassure(device.identifier in buildmanifest.supported_devices, "This iPSW can't be used to restore the connected device")
 	ipsw.get_ipswinfo(buildmanifest)
 	_ibss = buildmanifest.get_comp(device.board, 'iBSS')
 	_ibec = buildmanifest.get_comp(device.board, 'iBEC')
@@ -115,8 +115,8 @@ def main():
 		ramdisk_path = buildmanifest.get_comp(device.board, 'RestoreRamDisk')
 		ipsw.extract_file(_ibss, f'{tmpdir}/ibss.extracted')
 		ipsw.extract_file(_ibec, f'{tmpdir}/ibec.extracted')
-		patch_bootloader(f'{tmpdir}/ibss.extracted', 'iBSS', device, buildmanifest.get_buildid(), tmpdir)
-		patch_bootloader(f'{tmpdir}/ibec.extracted', 'iBEC', device, buildmanifest.get_buildid(), tmpdir)
+		patch_bootloader(f'{tmpdir}/ibss.extracted', 'iBSS', device, buildmanifest.buildid, ipsw.version, tmpdir)
+		patch_bootloader(f'{tmpdir}/ibec.extracted', 'iBEC', device, buildmanifest.buildid, ipsw.version, tmpdir)
 		ipsw.extract_file(ramdisk_path, f"{tmpdir}/ramdisk_org.dmg")
 		unpack_rdsk = subprocess.run(('img4','-i',f"{tmpdir}/ramdisk_org.dmg",'-o',f"{tmpdir}/ramdisk.dmg"), stdout=subprocess.DEVNULL)
 		retassure(unpack_rdsk.returncode == 0, "Failed to unpack ramdisk")
