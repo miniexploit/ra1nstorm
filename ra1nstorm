@@ -17,7 +17,6 @@ from others import device, api
 import argparse
 import time
 
-
 retassure(platform.system() == 'Darwin', 'This OS is not supported')
 
 os.chdir(os.path.dirname(sys.argv[0]))
