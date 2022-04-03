@@ -3,11 +3,11 @@
 # Made by MiniExploit
 
 import shutil
-import os, sys
+import os, sys, platform
 from tempfile import TemporaryDirectory
 import subprocess
 from others.ipsw import IPSW
-from others.manifest import Manifest
+from others.manifest import Manifest, ota_manifests
 from others.restore import Restore, RestoreBootchain
 from others.dependencies import check_requirements
 from others.kerneldiff import diff_kernel
@@ -16,6 +16,8 @@ from others.device import Device
 from others import device, api
 import argparse
 import time
+
+retassure(platform.system() == 'Darwin', 'This OS is not supported')
 
 os.chdir(os.path.dirname(sys.argv[0]))
 
@@ -79,10 +81,25 @@ def patch_ramdisk(ramdisk, output, tmpdir):
 	os.chmod(f'{tmpdir}/patched_asr', 0o755)
 	shutil.move(f'{tmpdir}/patched_asr', f'{tmpdir}/rdsk_mnpt/usr/sbin/asr')
 	time.sleep(3)
-	# Place patched libimg4 into ramdisk
-	os.remove(f'{tmpdir}/rdsk_mnpt/usr/lib/libimg4.dylib')
-	shutil.copyfile('others/libimg4.dylib', f'{tmpdir}/rdsk_mnpt/usr/lib/libimg4.dylib')
-	time.sleep(3)
+	# NEW: Patch libimg4
+	if os.path.exists(f'{tmpdir}/rdsk_mnpt/usr/lib/libimg4.dylib'):
+		tohex = subprocess.run(f'hexdump {tmpdir}/rdsk_mnpt/usr/lib/libimg4.dylib > {tmpdir}/libimg4.hex', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+		retassure(tohex.returncode == 0, "Failed to patch libimg4")
+		with open(f'{tmpdir}/libimg4.hex', 'r') as f:
+			data = f.read()
+		try:
+			topatch = [line for line in data.splitlines() if 'b1b0' in line][0]
+		except IndexError:
+			reterror("Failed to patch libimg4")
+		patch = topatch.replace('c0 00 80 52', '00 00 80 52')
+		data = data.replace(topatch, patch)
+		with open(f'{tmpdir}/libimg4.hex', 'w') as f:
+			f.write(data)
+		tobin = subprocess.run(('xxd','-r',f'{tmpdir}/libimg4.hex',f'{tmpdir}/patched_libimg4.dylib'), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+		retassure(tobin.returncode == 0, "Failed to patch libimg4")
+		os.remove(f'{tmpdir}/rdsk_mnpt/usr/lib/libimg4.dylib')
+		shutil.move(f'{tmpdir}/patched_libimg4.dylib', f'{tmpdir}/rdsk_mnpt/usr/lib/libimg4.dylib')
+		time.sleep(3)
 	# Detach ramdisk
 	detach = subprocess.run(('hdiutil','detach',f'{tmpdir}/rdsk_mnpt'), stdout=subprocess.DEVNULL)
 	retassure(detach.returncode == 0, "Failed to ummount ramdisk")
@@ -97,6 +114,7 @@ def main():
 	parser.add_argument('-s','--save-log',nargs=1, metavar='PATH', help='Specify path for saving futurerestore log')
 	parser.add_argument('-u', '--update', help='Keep data while restoring (Untested)', action='store_true')
 	args = parser.parse_args()
+	ota = False
 	if args.save_log:
 		retassure(os.path.isdir(args.save_log[0]), "Provided path to save log is not a directory")
 
@@ -106,56 +124,83 @@ def main():
 	buildmanifest = Manifest(ipsw.read_file('BuildManifest.plist'))
 	retassure(device.identifier in buildmanifest.supported_devices, "This iPSW can't be used to restore the connected device")
 	ipsw.get_ipswinfo(buildmanifest)
-	_ibss = buildmanifest.get_comp(device.board, 'iBSS')
-	_ibec = buildmanifest.get_comp(device.board, 'iBEC')
+	if device.otaable and ipsw.otaable:
+		ota = True
+	retassure(buildmanifest.version[0] == 10 and ota, "Restoring to iOS 10.x on this device is not available")
+	if ota:
+		print("[NOTE] About to restore device with OTA method, custom SHSH blob won't be used")
 	with TemporaryDirectory() as tmpdir:
+		print(tmpdir)
 		if args.update:
 			print("[WARNING] -u/--update option is untested, use it at your own risk!")
-
-		ramdisk_path = buildmanifest.get_comp(device.board, 'RestoreRamDisk')
+		_ibss = buildmanifest.get_comp(device.board, 'iBSS')
+		_ibec = buildmanifest.get_comp(device.board, 'iBEC')
 		ipsw.extract_file(_ibss, f'{tmpdir}/ibss.extracted')
 		ipsw.extract_file(_ibec, f'{tmpdir}/ibec.extracted')
-		patch_bootloader(f'{tmpdir}/ibss.extracted', 'iBSS', device, buildmanifest.buildid, ipsw.version, tmpdir)
-		patch_bootloader(f'{tmpdir}/ibec.extracted', 'iBEC', device, buildmanifest.buildid, ipsw.version, tmpdir)
-		ipsw.extract_file(ramdisk_path, f"{tmpdir}/ramdisk_org.dmg")
-		unpack_rdsk = subprocess.run(('img4','-i',f"{tmpdir}/ramdisk_org.dmg",'-o',f"{tmpdir}/ramdisk.dmg"), stdout=subprocess.DEVNULL)
-		retassure(unpack_rdsk.returncode == 0, "Failed to unpack ramdisk")
-		kernelcache = buildmanifest.get_comp(device.board, 'RestoreKernelCache')
-		ipsw.extract_file(kernelcache ,f"{tmpdir}/kernelcache.release.extracted")
-		unpack_krnl = subprocess.run(('img4','-i',f"{tmpdir}/kernelcache.release.extracted",'-o',f"{tmpdir}/kcache.raw"), stdout=subprocess.DEVNULL)
-		retassure(unpack_krnl.returncode == 0, "Failed to unpack kernelcache")
-		patch_ramdisk(f'{tmpdir}/ramdisk.dmg', f'{tmpdir}/ramdisk.im4p', tmpdir)
-		patch_kernel(f'{tmpdir}/kcache.raw', f'{tmpdir}/kernelcache.release.extracted', f'{tmpdir}/kernelcache.im4p', tmpdir)
+		patch_bootloader(f'{tmpdir}/ibss.extracted', 'iBSS', device, buildmanifest.buildid, ipsw.int_version, tmpdir)
+		patch_bootloader(f'{tmpdir}/ibec.extracted', 'iBEC', device, buildmanifest.buildid, ipsw.int_version, tmpdir)
+		if not ota:
+			ramdisk_path = buildmanifest.get_comp(device.board, 'RestoreRamDisk')
+			ipsw.extract_file(ramdisk_path, f"{tmpdir}/ramdisk_org.dmg")
+			unpack_rdsk = subprocess.run(('img4','-i',f"{tmpdir}/ramdisk_org.dmg",'-o',f"{tmpdir}/ramdisk.dmg"), stdout=subprocess.DEVNULL)
+			retassure(unpack_rdsk.returncode == 0, "Failed to unpack ramdisk")
+			kernelcache = buildmanifest.get_comp(device.board, 'RestoreKernelCache')
+			ipsw.extract_file(kernelcache ,f"{tmpdir}/kernelcache.release.extracted")
+			unpack_krnl = subprocess.run(('img4','-i',f"{tmpdir}/kernelcache.release.extracted",'-o',f"{tmpdir}/kcache.raw"), stdout=subprocess.DEVNULL)
+			retassure(unpack_krnl.returncode == 0, "Failed to unpack kernelcache")
+			patch_ramdisk(f'{tmpdir}/ramdisk.dmg', f'{tmpdir}/ramdisk.im4p', tmpdir)
+			patch_kernel(f'{tmpdir}/kcache.raw', f'{tmpdir}/kernelcache.release.extracted', f'{tmpdir}/kernelcache.im4p', tmpdir)
 
-		bootchain = RestoreBootchain(
-			f'{tmpdir}/ibss.{device.board}.patched.img4', # This path hasn't existed yet since we haven't signed the bootloaders.
-			f'{tmpdir}/ibec.{device.board}.patched.img4', # However, it will be saved before it's passed to futurerestore
-			f'{tmpdir}/ramdisk.im4p', 
-			f'{tmpdir}/kernelcache.im4p'
-		)
-
+			bootchain = RestoreBootchain(
+				f'{tmpdir}/ibss.{device.board}.patched.img4', # This path hasn't existed yet since we haven't signed the bootloaders.
+				f'{tmpdir}/ibec.{device.board}.patched.img4', # However, it will be saved before it's passed to futurerestore
+				f'{tmpdir}/ramdisk.im4p', 
+				f'{tmpdir}/kernelcache.im4p'
+			)
+		else:
+			ota_manifests(device.identifier, f'{tmpdir}/OTABuildManifest.plist')
+			bootchain = RestoreBootchain(
+				f'{tmpdir}/ibss.{device.board}.ota.im4p',
+				f'{tmpdir}/ibec.{device.board}.ota.im4p'
+			)
+		device.free_device()
 		restore = Restore(device, bootchain, args.ipsw[0], args.update)
 		if not os.path.exists(f"{tmpdir}/tempblobs"):
 			os.makedirs(f'{tmpdir}/tempblobs')
-		if not os.path.exists(f'{tmpdir}/apnonceblobs'):
-			os.makedirs(f'{tmpdir}/apnonceblobs')
-		if not args.blob:
+		if not os.path.exists(f'{tmpdir}/otablobs'):
+			os.makedirs(f'{tmpdir}/otablobs')
+		if ota:
 			restore.save_blobs(f'{tmpdir}/tempblobs')
 			restore.save_im4m(f'{tmpdir}/im4m')
-		else:
-			restore.save_im4m(f'{tmpdir}/im4m', args.blob[0])
-		restore.sign_bootloader(f'{tmpdir}/iBSS.patched',f'{tmpdir}/ibss.{device.board}.patched.img4','iBSS')
-		restore.sign_bootloader(f'{tmpdir}/iBEC.patched',f'{tmpdir}/ibec.{device.board}.patched.img4','iBEC')
-		if not args.blob:
+			restore.sign_bootloader(f'{tmpdir}/iBSS.patched', f'{tmpdir}/ibss.{device.board}.ota.im4p', 'iBSS')
+			restore.sign_bootloader(f'{tmpdir}/iBEC.patched', f'{tmpdir}/ibec.{device.board}.ota.im4p', 'iBEC')
+			restore.save_blobs(f'{tmpdir}/otablobs', f'{tmpdir}/OTABuildManifest.plist')
+			sep = buildmanifest.get_comp(device.board, 'RestoreSEP')
+			bb = buildmanifest.get_comp(device.board, 'BasebandFirmware')
+			ipsw.extract_file(sep, f'{tmpdir}/sep.im4p')
+			ipsw.extract_file(bb, f'{tmpdir}/baseband.bbfw')
 			if args.save_log:
-				restore.restore(log_path=args.save_log[0])
+				restore.restore(ota=True, log_path=args.save_log[0], sep=f'{tmpdir}/sep.im4p', bb=f'{tmpdir}/baseband.bbfw', bm=f'{tmpdir}/OTABuildManifest.plist')
 			else:
-				restore.restore()
+				restore.restore(ota=True, sep=f'{tmpdir}/sep.im4p', bb=f'{tmpdir}/baseband.bbfw', bm=f'{tmpdir}/OTABuildManifest.plist')
 		else:
-			if args.save_log:
-				restore.restore(custom_blob=args.blob[0], log_path=args.save_log[0])	
+			if not args.blob:
+				restore.save_blobs(f'{tmpdir}/tempblobs')
+				restore.save_im4m(f'{tmpdir}/im4m')
 			else:
-				restore.restore(custom_blob=args.blob[0])
+				restore.save_im4m(f'{tmpdir}/im4m', args.blob[0])
+			restore.sign_bootloader(f'{tmpdir}/iBSS.patched', f'{tmpdir}/ibss.{device.board}.patched.img4', 'iBSS')
+			restore.sign_bootloader(f'{tmpdir}/iBEC.patched', f'{tmpdir}/ibec.{device.board}.patched.img4', 'iBEC')
+			if not args.blob:
+				if args.save_log:
+					restore.restore(log_path=args.save_log[0])
+				else:
+					restore.restore()
+			else:
+				if args.save_log:
+					restore.restore(custom_blob=args.blob[0], log_path=args.save_log[0])	
+				else:
+					restore.restore(custom_blob=args.blob[0])
 
 if __name__ == '__main__':
 	try:
