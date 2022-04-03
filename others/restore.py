@@ -3,13 +3,15 @@ import subprocess
 import glob
 import time
 from others.error import retassure
+import time
 
 class RestoreBootchain:
-	def __init__(self, ibss, ibec, ramdisk, kernelcache):
+	def __init__(self, ibss, ibec, ramdisk=None, kernelcache=None):
 		self.ibss = ibss
 		self.ibec = ibec
-		self.ramdisk = ramdisk
-		self.kernelcache = kernelcache
+		if ramdisk and kernelcache:
+			self.ramdisk = ramdisk
+			self.kernelcache = kernelcache
 
 class Restore:
 	def __init__(self, device_struct, bootchain, ipsw, update):
@@ -18,7 +20,7 @@ class Restore:
 		self.ipsw = ipsw
 		self.update = update
 
-	def save_blobs(self, save_path):
+	def save_blobs(self, save_path, bm=None):
 		print("Saving temporary SHSH...")
 		args = [
 			'tsschecker',
@@ -28,14 +30,25 @@ class Restore:
 			self.device.board,
 			'-e',
 			self.device.ecid,
-			'-l',
 			'-s',
 			'--save-path',
 			save_path,
 			'--nocache'
 		]
-		retassure(subprocess.run(args, stdout=subprocess.PIPE, universal_newlines=True).returncode == 0, "Failed to save SHSH blobs")
-		self.blob = glob.glob(f"{save_path}/*.shsh*")[0]
+		if bm:
+			args.append('-m')
+			args.append(bm)
+			args.append('--apnonce')
+			args.append(self.device.apnonce)
+			
+		else:
+			args.append('-l')
+		retassure(subprocess.run(args, stdout=subprocess.DEVNULL, universal_newlines=True).returncode == 0, "Failed to save SHSH blobs")
+		if bm:
+			self.ota_blob = glob.glob(f"{save_path}/*.shsh*")[0]
+		else:
+			self.blob = glob.glob(f"{save_path}/*.shsh*")[0]
+
 			
 	def sign_bootloader(self, path, output, type):
 		print(f"Signing {type}...")
@@ -76,48 +89,58 @@ class Restore:
 		retassure(subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0, "Failed to save IM4M")
 		self.im4m = output
 
-	def restore(self, custom_blob=None, log_path=None):
-		print("Restoring device...")
-		if custom_blob:
+	def restore(self, custom_blob=None, log_path=None, ota=False, sep=None, bb=None, bm=None):
+		if sep:
+			print("Restoring device with OTA method...")
+		else:
+			print("Restoring device...")
+		if custom_blob and not ota:
 			args = [
 				'futurerestore',
 				'-t',
 				custom_blob,
 				'--skip-blob',
-				'--latest-sep',
 				'--use-pwndfu',
 				'--ibss-img4',
 				self.bootchain.ibss,
 				'--ibec-img4',
-				self.bootchain.ibec,
-				'--rdsk',
-				self.bootchain.ramdisk,
-				'--rkrn',
-				self.bootchain.kernelcache
+				self.bootchain.ibec
 			]	
 		else:	
 			args = [
 					'futurerestore',
 					'-t',
-					self.blob,
-					'--skip-blob',
-					'--latest-sep',
+					self.blob if not ota else self.ota_blob,
 					'--use-pwndfu',
+					'--skip-blob',
 					'--ibss-img4',
 					self.bootchain.ibss,
 					'--ibec-img4',
-					self.bootchain.ibec,
-					'--rdsk',
-					self.bootchain.ramdisk,
-					'--rkrn',
-					self.bootchain.kernelcache
+					self.bootchain.ibec
 				]
-		if self.device.baseband:
-			args.append('--latest-baseband')
+
+		if sep and bb and bm:
+			args.append('-s')
+			args.append(sep)
+			args.append('-m')
+			args.append(bm)
+			args.append('-b')
+			args.append(bb)
+			args.append('-p')
+			args.append(bm)
+			args.append('--ota')
 		else:
-			args.append('--no-baseband')
-		if self.update:
-			args.append('-u')
+			args.append('--latest-sep')
+			args.append('--rdsk')
+			args.append(self.bootchain.ramdisk)
+			args.append('--rkrn')
+			args.append(self.bootchain.kernelcache)
+			if self.device.baseband:
+				args.append('--latest-baseband')
+			else:
+				args.append('--no-baseband')
+			if self.update:
+				args.append('-u')
 		args.append(self.ipsw)
 		if log_path:
 			if log_path.endswith('/'):
@@ -130,3 +153,4 @@ class Restore:
 		else:
 			result = subprocess.run(args, universal_newlines=True)
 			retassure(result.returncode == 0, f'Restore failed ({result.returncode})')
+			print('Restore succeeded!')
