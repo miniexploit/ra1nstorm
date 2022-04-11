@@ -41,10 +41,11 @@ NOTE: Due to SEP limitation, you can only restore to an iOS version which its SE
 2. [img4tool](https://github.com/tihmstar/img4tool)
 3. [img4](https://github.com/xerub/img4lib) (img4lib)
 4. [kairos](https://github.com/dayt0n/kairos)
-5. [ldid](https://drive.google.com/uc?export=download&id=1_amZww5ypZ9gcdHDlNmEL2Zh-t3eLKXi)
-6. [Kernel64Patcher](https://github.com/Ralph0045/Kernel64Patcher)
-7. [asr64_patcher](https://github.com/exploit3dguy/asr64_patcher)
-8. [tsschecker](https://github.com/1Conan/tsschecker)
+5. [iBoot64Patcher](https://github.com/tihmstar/iBoot64Patcher)
+6. [ldid](https://drive.google.com/uc?export=download&id=1_amZww5ypZ9gcdHDlNmEL2Zh-t3eLKXi)
+7. [Kernel64Patcher](https://github.com/Ralph0045/Kernel64Patcher)
+8. [asr64_patcher](https://github.com/exploit3dguy/asr64_patcher)
+9. [tsschecker](https://github.com/1Conan/tsschecker)
 
 After downloading the binaries above, you have to move them to PATH (e.g. ```/usr/local/bin```)
 
