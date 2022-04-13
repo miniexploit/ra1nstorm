@@ -5,6 +5,8 @@ Since the purpose of this tool is to tethered downgrade a device, after restorin
 * [Ramiel](https://github.com/MatthewPierson/Ramiel)
 * [PyBoot](https://github.com/MatthewPierson/PyBoot)
 * [ra1nsn0w](https://github.com/tihmstar/ra1nsn0w)
+
+ra1nstorm now supports downgrading untethered from any iOS to iOS 10.3.3 on some A7 devices
 ## Before using it, please keep in mind
 YOU are fully responsible to any data loss or damaged cause to your device while using ra1nstorm
 ## Usage
@@ -32,6 +34,7 @@ NOTE: Due to SEP limitation, you can only restore to an iOS version which its SE
 |  Device   |  From  |   To   |
 |-----------|--------|--------|
 | iPhone9,1 | 15.2.1 |  14.3  |
+| iPad4,2   | 12.5.4 | 10.3.3 |
 ## Requirements
 * A computer running macOS
 * 3 gigabytes free space on the computer
