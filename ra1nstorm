@@ -126,7 +126,7 @@ def main():
 	ipsw.get_ipswinfo(buildmanifest)
 	if device.otaable and ipsw.otaable:
 		ota = True
-	retassure(buildmanifest.version[0] == 10 and ota, "Restoring to iOS 10.x on this device is not available")
+	#retassure(buildmanifest.version[0] == 10 and ota, "Restoring to iOS 10.x on this device is not available")
 	if ota:
 		print("[NOTE] About to restore device with OTA method, custom SHSH blob won't be used")
 	with TemporaryDirectory() as tmpdir:
