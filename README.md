@@ -35,6 +35,7 @@ NOTE: Due to SEP limitation, you can only restore to an iOS version which its SE
 |-----------|--------|--------|
 | iPhone9,1 | 15.2.1 |  14.3  |
 | iPad4,2   | 12.5.4 | 10.3.3 |
+| iPad4,2   | 12.5.4 |  12.0  |
 ## Requirements
 * A computer running macOS
 * 3 gigabytes free space on the computer
