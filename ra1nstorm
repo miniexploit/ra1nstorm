@@ -130,7 +130,6 @@ def main():
 	if ota:
 		print("[NOTE] About to restore device with OTA method, custom SHSH blob won't be used")
 	with TemporaryDirectory() as tmpdir:
-		print(tmpdir)
 		if args.update:
 			print("[WARNING] -u/--update option is untested, use it at your own risk!")
 		_ibss = buildmanifest.get_comp(device.board, 'iBSS')
