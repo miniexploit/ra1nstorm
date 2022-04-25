@@ -27,7 +27,7 @@ class Device:
 		self.bdid = [int(info.replace('BDID:',''), 16) for info in self.usb_device.serial_number.split(' ') if 'BDID' in info][0]
 		self.ecid = [info.replace('ECID:','') for info in self.usb_device.serial_number.split(' ') if 'ECID' in info][0]
 		self.apnonce = usb.util.get_string(self.usb_device, 1).split(f'NONC:')[1].split(' ')[0]
-		retassure(any((8010 <= self.cpid <= 8015, self.cpid == 8960)), "Device is not supported")
+		retassure(any((8010 <= self.cpid <= 8015, self.cpid == 8960, self.cpid == 7000, self.cpid == 8000, self.cpid == 8003)), "Device is not supported")
 		retassure("PWND:[" in self.usb_device.serial_number, "Device's not in pwned DFU mode")
 		for device in irecv_devices:
 			if device.cpid == self.cpid and device.bdid == self.bdid:
