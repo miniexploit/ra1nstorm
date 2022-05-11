@@ -2,3 +2,4 @@ requests
 psutil
 argparse
 pyusb
+remotezip
