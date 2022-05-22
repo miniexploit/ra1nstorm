@@ -2,7 +2,7 @@ import os, sys
 import shutil
 import psutil
 import subprocess
-from others.error import retassure, reterror
+from m1n1Exception import *
 
 class check_requirements:
 	def __init__(self):
