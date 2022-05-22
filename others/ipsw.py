@@ -6,7 +6,7 @@ import json
 import shutil
 import plistlib
 import os, sys
-from others.error import retassure, reterror
+from m1n1Exception import *
 from zipfile import ZipFile, is_zipfile
 
 
@@ -25,6 +25,7 @@ class IPSW:
 				return ipsw.read(file)
 		except KeyError:
 			reterror(f"File not in IPSW: {file}")
+
 	def extract_file(self, file, location):
 		try:
 			print(f"Extracting '{file}'...")
