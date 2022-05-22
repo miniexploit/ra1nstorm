@@ -2,7 +2,7 @@ import sys, os
 import subprocess
 import glob
 import time
-from others.error import retassure
+from m1n1Exception import *
 import time
 
 class RestoreBootchain:
