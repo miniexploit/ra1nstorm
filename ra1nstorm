@@ -11,11 +11,13 @@ from others.manifest import Manifest, ota_manifests
 from others.restore import Restore, RestoreBootchain
 from others.dependencies import check_requirements
 from others.kerneldiff import diff_kernel
-from others.error import *
+from m1n1Exception import *
 from others.device import Device
 from others import device, api
 import argparse
 import time
+
+set_package_name('ra1nstorm')
 
 retassure(platform.system() == 'Darwin', 'This OS is not supported')
 
@@ -204,11 +206,8 @@ def main():
 if __name__ == '__main__':
 	try:
 		main()
-	except Ra1nstormException as e:
-		print("ra1nstorm failed with Ra1nstormException:")
-		print(f"[exception]:")
-		print(f"what={e.err}")
-		print(f"file={e.caller}")
+	except m1n1Exception as e:
+		print(e)
 
 
 
