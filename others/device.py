@@ -3,7 +3,7 @@ import sys
 import time
 import subprocess
 import usb.core, usb.util
-from others.error import retassure, reterror
+from m1n1Exception import *
 from others.irecv_devices_struct import irecv_device, irecv_devices
 
 
