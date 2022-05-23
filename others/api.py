@@ -19,5 +19,5 @@ def get_keys(identifier, board, buildid):
 def partialzip_download(url, file, dest):
 	with RemoteZip(url) as zip:
 		data = zip.read(file)
-	with open(dest, 'rb') as f:
+	with open(dest, 'wb') as f:
 		f.write(data)
