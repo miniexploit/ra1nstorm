@@ -2,4 +2,5 @@ requests
 psutil
 argparse
 pyusb
+remotezip
 m1n1Exception
