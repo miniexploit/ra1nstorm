@@ -101,9 +101,9 @@ class Restore:
 				custom_blob,
 				'--skip-blob',
 				'--use-pwndfu',
-				'--ibss-img4',
+				'--custom-ibss',
 				self.bootchain.ibss,
-				'--ibec-img4',
+				'--custom-ibec',
 				self.bootchain.ibec
 			]	
 		else:	
@@ -113,9 +113,9 @@ class Restore:
 					self.blob if not ota else self.ota_blob,
 					'--use-pwndfu',
 					'--skip-blob',
-					'--ibss-img4',
+					'--custom-ibss',
 					self.bootchain.ibss,
-					'--ibec-img4',
+					'--custom-ibec',
 					self.bootchain.ibec
 				]
 
@@ -128,7 +128,6 @@ class Restore:
 			args.append(bb)
 			args.append('-p')
 			args.append(bm)
-			args.append('--ota')
 		else:
 			args.append('--latest-sep')
 			args.append('--rdsk')
