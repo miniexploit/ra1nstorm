@@ -1,7 +1,7 @@
 # ra1nstorm
 Tethered downgrade 64-bit iDevices vulnerable to checkm8
 
-## Project temporarily abandoned. Use [sunst0rm](https://github.com/Mineek/sunst0rm) instead
+## This is the legacy version of ra1nstorm, before getting majorly updated. I want to keep this code because this is my first major project ever. TLDR; it's very important to me. Feel free to have a look at it whenever you want
 
 Since the purpose of this tool is to tethered downgrade a device, after restoring please use one of the tools listed below to tethered boot it:
 * [Ramiel](https://github.com/MatthewPierson/Ramiel)
